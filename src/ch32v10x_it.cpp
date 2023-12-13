@@ -13,7 +13,7 @@
 
 extern "C" void NMI_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 extern "C" void HardFault_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
-extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+extern "C" void EXTI9_5_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
 /*********************************************************************
  * @fn      NMI_Handler
@@ -47,11 +47,11 @@ void HardFault_Handler(void)
  *
  * @return  none
  */
-__weak_symbol void EXTI15_10_IRQHandler(void)
+__weak_symbol void EXTI9_5_IRQHandler(void)
 {
-    if(EXTI_GetITStatus(EXTI_Line12) != RESET)
+    if(EXTI_GetITStatus(EXTI_Line8) != RESET)
     {
         printf("Run at EXTI\r\n");
-        EXTI_ClearITPendingBit(EXTI_Line12); /* Clear Flag */
+        EXTI_ClearITPendingBit(EXTI_Line8); /* Clear Flag */
     }
 }

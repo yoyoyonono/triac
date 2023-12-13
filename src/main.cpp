@@ -50,19 +50,18 @@
 #define SEG_DIG4_PIN 6
 
 #define INT_PORT GPIOA
-#define INT_PIN 12
+#define INT_PIN 8
 
 #define TRIAC_PORT GPIOA
-#define TRIAC_PIN 8
+#define TRIAC_PIN 11
 
 #define FIRE_LENGTH_us 600
 
-extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
-extern "C" void TIM2_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+extern "C" void EXTI9_5_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
 const uint16_t wattage_delay_lookup[] = {8645, 8069, 7615, 7223, 6868, 6538, 6225, 5924, 5631, 5343, 5059, 4774, 4488, 4198, 3901, 3593, 3270, 2927, 2552, 2128, 1615, 866};
 
-uint16_t firing_delay = 8700;
+uint16_t firing_delay = 8645;
 uint16_t target_firing_delay = 8645;
 uint16_t current_wattage = 200;
 
@@ -115,7 +114,7 @@ int main() {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
 
-    pinMode(INT_PORT, INT_PIN, INPUT_PULLUP);
+    pinMode(INT_PORT, INT_PIN, INPUT);
     pinMode(TRIAC_PORT, TRIAC_PIN, OUTPUT);
 
     pinMode(KEY1_PORT, KEY1_PIN, INPUT_ANALOG);
@@ -146,7 +145,7 @@ int main() {
     GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
 
     EXTI_InitTypeDef EXTI_InitStructure = {0};
-    EXTI_InitStructure.EXTI_Line = EXTI_Line12;
+    EXTI_InitStructure.EXTI_Line = EXTI_Line8;
     EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
@@ -155,7 +154,7 @@ int main() {
     printf("EXTI Init ");
 
     NVIC_InitTypeDef NVIC_InitStructure = {0};
-    NVIC_InitStructure.NVIC_IRQChannel = EXTI15_10_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI9_5_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
@@ -217,15 +216,15 @@ int main() {
     return 0;
 }
 
-void EXTI15_10_IRQHandler(void)
+void EXTI9_5_IRQHandler(void)
 {
-    if(EXTI_GetITStatus(EXTI_Line12) != RESET)
+    if(EXTI_GetITStatus(EXTI_Line8) != RESET)
     {
-        create_timer(firing_delay/10);
-//        digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
-//        delayMicroseconds(FIRE_LENGTH_us);  
-//        digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
-        EXTI_ClearITPendingBit(EXTI_Line12); /* Clear Flag */
+        delayMicroseconds(firing_delay);
+        digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
+        delayMicroseconds(FIRE_LENGTH_us);  
+        digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
+        EXTI_ClearITPendingBit(EXTI_Line8); /* Clear Flag */
     }
 }
 
