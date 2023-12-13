@@ -50,7 +50,7 @@
 #define SEG_DIG4_PIN 6
 
 #define INT_PORT GPIOA
-#define INT_PIN 12
+#define INT_PIN 9
 
 #define TRIAC_PORT GPIOA
 #define TRIAC_PIN 8
@@ -98,6 +98,10 @@ uint16_t wattage_to_delay(uint16_t wattage) {
     return wattage_delay_lookup[wattage / 100 - 1];
 }
 
+void set_alpha(uint16_t alpha) {
+    TIM1->CH1CVR = alpha;
+    TIM1->ATRLR = alpha + FIRE_LENGTH_us;
+}
 
 int main() {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -109,14 +113,11 @@ int main() {
     printf("SystemCoreClock: %d\r\n", SystemCoreClock);
 
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
-
-    pinMode(INT_PORT, INT_PIN, INPUT_PULLUP);
-    pinMode(TRIAC_PORT, TRIAC_PIN, OUTPUT);
 
     pinMode(KEY1_PORT, KEY1_PIN, INPUT_ANALOG);
     pinMode(KEY2_PORT, KEY2_PIN, INPUT_ANALOG);
@@ -143,31 +144,42 @@ int main() {
     
     ADC_Cmd(ADC1, ENABLE);
 
-    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
+    pinMode(TRIAC_PORT, TRIAC_PIN, GPIO_Mode_AF_PP);
+    pinMode(INT_PORT, INT_PIN, INPUT);
 
-    EXTI_InitTypeDef EXTI_InitStructure = {0};
-    EXTI_InitStructure.EXTI_Line = EXTI_Line12;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTI_InitStructure);
+    // https://www.youtube.com/watch?v=uSq42wN4JIU
+    
+    TIM1->CTLR1 = 0b010001001; 
+    TIM1->CTLR2 = 0b000000000000000;
+    TIM1->SMCFGR = 0b0000000001100110;
+    TIM1->DMAINTENR = 0b000000000000000;
+    TIM1->INTFR = 0b0000000000000;
+    TIM1->SWEVGR = 0b00000000;
+    TIM1->CHCTLR1 = 0b0000000101111000;
+    TIM1->CHCTLR2 = 0b0000000000000000;
+    TIM1->CCER = 0b0000010100001;
+    TIM1->CNT = 0b0000000000000000;
+    TIM1->PSC = 0b0000000001001000;
+    TIM1->ATRLR = 0b0000000000000000;
+    TIM1->RPTCR = 0b00000000;
 
-    printf("EXTI Init ");
+    TIM1->CH1CVR = 0b0000000000000000;
+    TIM1->CH2CVR = 0b0000000000000000;
+    TIM1->CH3CVR = 0b0000000000000000;
+    TIM1->CH4CVR = 0b0000000000000000;
 
-    NVIC_InitTypeDef NVIC_InitStructure = {0};
-    NVIC_InitStructure.NVIC_IRQChannel = EXTI15_10_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
+    TIM1->BDTR = 0b1000000000000000;
+    TIM1->DMACFGR = 0b0000000000000;
 
-    printf("NVIC init \r\n");
+    printf("Timer init \r\n");
 
     display.clear();
 
     display.printNumber(current_wattage);
 
     printf("Display init \r\n");
+
+    set_alpha(firing_delay);
 
     while (true) {
         if (firing_delay != target_firing_delay) {
@@ -177,6 +189,7 @@ int main() {
             else {
                 firing_delay -= 2;
             }
+            set_alpha(firing_delay);
         }
         display.refresh();
 
@@ -216,16 +229,3 @@ int main() {
     }
     return 0;
 }
-
-void EXTI15_10_IRQHandler(void)
-{
-    if(EXTI_GetITStatus(EXTI_Line12) != RESET)
-    {
-        create_timer(firing_delay/10);
-//        digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
-//        delayMicroseconds(FIRE_LENGTH_us);  
-//        digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
-        EXTI_ClearITPendingBit(EXTI_Line12); /* Clear Flag */
-    }
-}
-
