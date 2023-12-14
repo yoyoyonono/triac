@@ -51,15 +51,12 @@
 #define SEG_DIG4_PIN 6
 
 #define INT_PORT GPIOA
-#define INT_PIN 10
+#define INT_PIN 9
 
 #define TRIAC_PORT GPIOA
-#define TRIAC_PIN 9
+#define TRIAC_PIN 8
 
 #define FIRE_LENGTH_us 600
-
-extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
-extern "C" void TIM2_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
 const uint16_t wattage_delay_lookup[] = {8645, 8069, 7615, 7223, 6868, 6538, 6225, 5924, 5631, 5343, 5059, 4774, 4488, 4198, 3901, 3593, 3270, 2927, 2552, 2128, 1615, 866};
 
@@ -100,7 +97,7 @@ uint16_t wattage_to_delay(uint16_t wattage) {
 }
 
 void set_alpha(uint16_t alpha) {
-    TIM1->CH4CVR = alpha;
+    TIM1->CH1CVR = alpha;
     TIM1->ATRLR = alpha + FIRE_LENGTH_us;
 #ifdef LOG_ALPHA
     printf("Alpha: %d\r\n", alpha);
@@ -149,7 +146,12 @@ int main() {
     
     ADC_Cmd(ADC1, ENABLE);
 
-    pinMode(TRIAC_PORT, TRIAC_PIN, GPIO_Mode_AF_PP);
+    GPIO_InitTypeDef GPIO_InitStructure = {0};
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
     pinMode(INT_PORT, INT_PIN, INPUT);
 
     // https://www.youtube.com/watch?v=uSq42wN4JIU
@@ -166,7 +168,7 @@ int main() {
     TIM1->CHCTLR2 = 0b0000000000000000;
     TIM1->CCER = 0b0000010100001;
     TIM1->CNT = 0b0000000000000000;
-    TIM1->PSC = 0b0000000001001001;
+    TIM1->PSC = 0b0000000001000111;
     TIM1->ATRLR = 0b0000000000000000;
     TIM1->RPTCR = 0b00000000;
 
@@ -179,6 +181,7 @@ int main() {
     TIM1->DMACFGR = 0b0000000000000;
 
     TIM1->CTLR1 |= 0b1;
+    TIM_Cmd(TIM1, ENABLE);
 
     printf("Timer init \r\n");
 
