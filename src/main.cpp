@@ -98,62 +98,6 @@ uint16_t wattage_to_delay(uint16_t wattage) {
     return wattage_delay_lookup[wattage / 100 - 1];
 }
 
-void timer_init()
-{
-    GPIO_InitTypeDef GPIO_InitStructure = {0};
-    TIM_OCInitTypeDef TIM_OCInitStructure = {0};
-    TIM_ICInitTypeDef TIM_ICInitStructure = {0};
-    TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure = {0};
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-
-    GPIO_PinRemapConfig(GPIO_FullRemap_TIM2, ENABLE);
-
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
-    GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-    TIM_TimeBaseInitStructure.TIM_Period = firing_delay + FIRE_LENGTH_us;
-    TIM_TimeBaseInitStructure.TIM_Prescaler = 72 - 1;
-    TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-    TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-    TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 1;
-    TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStructure);
-    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
-    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-    TIM_OCInitStructure.TIM_Pulse = firing_delay;
-    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
-    TIM_OC3Init(TIM2, &TIM_OCInitStructure);
-
-    TIM_ICStructInit(&TIM_ICInitStructure);
-    TIM_ICInitStructure.TIM_Channel = TIM_Channel_2;
-    TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV1;
-    TIM_ICInitStructure.TIM_ICFilter = 0x00;
-    TIM_ICInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;
-    TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
-    TIM_ICInit(TIM2, &TIM_ICInitStructure);
-
-    TIM_SelectOnePulseMode(TIM2, TIM_OPMode_Single);
-    TIM_SelectInputTrigger(TIM2, TIM_TS_TI1FP1);
-    TIM_SelectSlaveMode(TIM2, TIM_SlaveMode_Trigger);
-}
-
-
-void set_alpha(uint16_t alpha) {
-    TIM2->CH3CVR = alpha;
-    TIM2->ATRLR = alpha + FIRE_LENGTH_us;
-#ifdef LOG_ALPHA
-    printf("Alpha: %d\r\n", alpha);
-#endif
-}
-
 int main() {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     SystemCoreClockUpdate();
@@ -227,8 +171,6 @@ int main() {
 
     printf("Display init \r\n");
 
-    set_alpha(firing_delay);
-
     while (true) {
         if (firing_delay != target_firing_delay) {
             if (firing_delay < target_firing_delay) {
@@ -237,7 +179,6 @@ int main() {
             else {
                 firing_delay -= 8;
             }
-            set_alpha(firing_delay);
         }
         for (int i = 0; i < 16; i++) {
             display.refresh();            
