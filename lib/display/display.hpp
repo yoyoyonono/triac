@@ -65,4 +65,5 @@ class Display {
         void printTime(uint8_t hour, uint8_t min);
         void printRaw(std::byte * raw);
         void setAll();
+        void allOff();
 };

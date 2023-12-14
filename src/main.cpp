@@ -8,7 +8,8 @@
 
 //#define LOG_INTERRUPT
 //#define LOG_BUTTONVALS
-#define LOG_SWITCHES
+//#define LOG_SWITCHES
+//#define LOG_ALPHA
 
 #define KEY1_PORT GPIOA
 #define KEY1_PIN 0
@@ -50,31 +51,31 @@
 #define SEG_DIG4_PIN 6
 
 #define INT_PORT GPIOA
-#define INT_PIN 8
+#define INT_PIN 15
 
 #define TRIAC_PORT GPIOA
-#define TRIAC_PIN 11
+#define TRIAC_PIN 12
 
 #define FIRE_LENGTH_us 600
 
-extern "C" void EXTI9_5_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
-const uint16_t wattage_delay_lookup[] = {8645, 8069, 7615, 7223, 6868, 6538, 6225, 5924, 5631, 5343, 5059, 4774, 4488, 4198, 3901, 3593, 3270, 2927, 2552, 2128, 1615, 866};
+const uint16_t wattage_delay_lookup[] = {8640, 8064, 7616, 7216, 6864, 6544, 6224, 5920, 5632, 5344, 5056, 4768, 4480, 4192, 3904, 3600, 3264, 2928, 2560, 2128, 1616, 864};
 
-uint16_t firing_delay = 8645;
-uint16_t target_firing_delay = 8645;
+volatile uint16_t firing_delay = 8704;
+uint16_t target_firing_delay = 8640;
 uint16_t current_wattage = 200;
 
 bool switch_states[] = {false, false, false, false, false, false};
 bool previous_switch_states[] = {false, false, false, false, false, false};
 
 TouchButton touch[] = {
-    TouchButton(ADC_Channel_0, 2200),
+    TouchButton(ADC_Channel_0, 1500),
     TouchButton(ADC_Channel_1, 1500),
     TouchButton(ADC_Channel_2, 1500),
     TouchButton(ADC_Channel_3, 1500),
     TouchButton(ADC_Channel_4, 1500),
-    TouchButton(ADC_Channel_5, 2200)
+    TouchButton(ADC_Channel_5, 1500)
 };
 
 Display display = Display(SEG_A_PORT, SEG_A_PIN,
@@ -97,7 +98,6 @@ uint16_t wattage_to_delay(uint16_t wattage) {
     return wattage_delay_lookup[wattage / 100 - 1];
 }
 
-
 int main() {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     SystemCoreClockUpdate();
@@ -108,13 +108,12 @@ int main() {
     printf("SystemCoreClock: %d\r\n", SystemCoreClock);
 
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
 
-    pinMode(INT_PORT, INT_PIN, INPUT);
+    pinMode(INT_PORT, INT_PIN, INPUT_PULLDOWN);
     pinMode(TRIAC_PORT, TRIAC_PIN, OUTPUT);
 
     pinMode(KEY1_PORT, KEY1_PIN, INPUT_ANALOG);
@@ -136,7 +135,7 @@ int main() {
     digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, HIGH);
     digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, HIGH);
 
-    printf("Keys init");
+    printf("Keys init\r\n");
 
     TKEY_CR |= 0x51000000;
     
@@ -145,7 +144,7 @@ int main() {
     GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
 
     EXTI_InitTypeDef EXTI_InitStructure = {0};
-    EXTI_InitStructure.EXTI_Line = EXTI_Line8;
+    EXTI_InitStructure.EXTI_Line = EXTI_Line15;
     EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
@@ -160,7 +159,11 @@ int main() {
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 
-    printf("NVIC init \r\n");
+    digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
+
+//    timer_init();
+
+    printf("Timer init \r\n");
 
     display.clear();
 
@@ -171,21 +174,28 @@ int main() {
     while (true) {
         if (firing_delay != target_firing_delay) {
             if (firing_delay < target_firing_delay) {
-                firing_delay += 2;
+                firing_delay += 8;
             }
             else {
-                firing_delay -= 2;
+                firing_delay -= 8;
             }
         }
-        display.refresh();
-
+        for (int i = 0; i < 16; i++) {
+            display.refresh();            
+        }
+        display.allOff();
         for (uint8_t i = 0; i < 6; i++) {
             switch_states[i] = touch[i].is_pressed();
 #ifdef LOG_BUTTONVALS
             printf("%d ", touch[i].read());
 #endif
         }
+#ifdef LOG_BUTTONVALS
+        printf("\r\n");
+#endif
         read_count++;
+        
+        
         if (!memcmp(switch_states, previous_switch_states, 6)) {
             continue;
         }
@@ -211,20 +221,24 @@ int main() {
         }
         display.printNumber(current_wattage);
         target_firing_delay = wattage_to_delay(current_wattage);
+#ifdef LOG_SWITCHES
         printf("Wattage: %d\tDelay: %d\r\n", current_wattage, target_firing_delay);
+#endif
     }
     return 0;
 }
 
-void EXTI9_5_IRQHandler(void)
-{
-    if(EXTI_GetITStatus(EXTI_Line8) != RESET)
-    {
+extern "C" void EXTI15_10_IRQHandler(void) {
+    if (EXTI_GetITStatus(EXTI_Line15) != RESET) {
+        // turn off all digits
+        display.allOff();
+#ifdef LOG_INTERRUPT
+        printf("EXTI15_10_IRQHandler\r\n");
+#endif
         delayMicroseconds(firing_delay);
-        digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
-        delayMicroseconds(FIRE_LENGTH_us);  
         digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
-        EXTI_ClearITPendingBit(EXTI_Line8); /* Clear Flag */
+        delayMicroseconds(FIRE_LENGTH_us);  
+        digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
+        EXTI_ClearITPendingBit(EXTI_Line15); /* Clear Flag */
     }
 }
-
