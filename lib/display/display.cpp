@@ -227,3 +227,18 @@ void Display::setAll() {
     digits[2] = std::byte(0b11111111);
     digits[3] = std::byte(0b11111111);
 }
+
+void Display::allOff() {
+    if (mode == COMMON_CATHODE) {
+        digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, HIGH);
+        digitalWrite(SEG_DIG2_PORT, SEG_DIG2_PIN, HIGH);
+        digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, HIGH);
+        digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, HIGH);
+    } 
+    else {
+        digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, LOW);
+        digitalWrite(SEG_DIG2_PORT, SEG_DIG2_PIN, LOW);
+        digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, LOW);
+        digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, LOW);
+    }
+}
