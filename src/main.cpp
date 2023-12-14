@@ -96,9 +96,57 @@ uint16_t wattage_to_delay(uint16_t wattage) {
     return wattage_delay_lookup[wattage / 100 - 1];
 }
 
+void timer_init()
+{
+    GPIO_InitTypeDef GPIO_InitStructure = {0};
+    TIM_OCInitTypeDef TIM_OCInitStructure = {0};
+    TIM_ICInitTypeDef TIM_ICInitStructure = {0};
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure = {0};
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+
+    GPIO_PinRemapConfig(GPIO_FullRemap_TIM2, ENABLE);
+
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+    TIM_TimeBaseInitStructure.TIM_Period = firing_delay + FIRE_LENGTH_us;
+    TIM_TimeBaseInitStructure.TIM_Prescaler = 72 - 1;
+    TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+    TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
+    TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 1;
+    TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStructure);
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+    TIM_OCInitStructure.TIM_Pulse = firing_delay;
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+    TIM_OC3Init(TIM2, &TIM_OCInitStructure);
+
+    TIM_ICStructInit(&TIM_ICInitStructure);
+    TIM_ICInitStructure.TIM_Channel = TIM_Channel_2;
+    TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV1;
+    TIM_ICInitStructure.TIM_ICFilter = 0x00;
+    TIM_ICInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;
+    TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
+    TIM_ICInit(TIM2, &TIM_ICInitStructure);
+
+    TIM_SelectOnePulseMode(TIM2, TIM_OPMode_Single);
+    TIM_SelectInputTrigger(TIM2, TIM_TS_TI1FP1);
+    TIM_SelectSlaveMode(TIM2, TIM_SlaveMode_Trigger);
+}
+
+
 void set_alpha(uint16_t alpha) {
-    TIM1->CH1CVR = alpha;
-    TIM1->ATRLR = alpha + FIRE_LENGTH_us;
+    TIM2->CH3CVR = alpha;
+    TIM2->ATRLR = alpha + FIRE_LENGTH_us;
 #ifdef LOG_ALPHA
     printf("Alpha: %d\r\n", alpha);
 #endif
@@ -108,7 +156,7 @@ int main() {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     SystemCoreClockUpdate();
     Delay_Init();
-//    USART_Printf_Init(115200);
+    USART_Printf_Init(115200);
     printf(__TIMESTAMP__);
     printf("\r\n");
     printf("SystemCoreClock: %d\r\n", SystemCoreClock);
@@ -118,8 +166,6 @@ int main() {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, DISABLE);
-    USART_Cmd(USART1, DISABLE);
 
     pinMode(KEY1_PORT, KEY1_PIN, INPUT_ANALOG);
     pinMode(KEY2_PORT, KEY2_PIN, INPUT_ANALOG);
@@ -146,42 +192,7 @@ int main() {
     
     ADC_Cmd(ADC1, ENABLE);
 
-    GPIO_InitTypeDef GPIO_InitStructure = {0};
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-    pinMode(INT_PORT, INT_PIN, INPUT);
-
-    // https://www.youtube.com/watch?v=uSq42wN4JIU
-
-    RCC_APB1PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE); 
-    
-    TIM1->CTLR1 = 0b010001000; 
-    TIM1->CTLR2 = 0b000000000000000;
-    TIM1->SMCFGR = 0b0000000001100110;
-    TIM1->DMAINTENR = 0b000000000000000;
-    TIM1->INTFR = 0b0000000000000;
-    TIM1->SWEVGR = 0b00000000;
-    TIM1->CHCTLR1 = 0b0000000101111000;
-    TIM1->CHCTLR2 = 0b0000000000000000;
-    TIM1->CCER = 0b0000010100001;
-    TIM1->CNT = 0b0000000000000000;
-    TIM1->PSC = 0b0000000001000111;
-    TIM1->ATRLR = 0b0000000000000000;
-    TIM1->RPTCR = 0b00000000;
-
-    TIM1->CH1CVR = 0b0000000000000000;
-    TIM1->CH2CVR = 0b0000000000000000;
-    TIM1->CH3CVR = 0b0000000000000000;
-    TIM1->CH4CVR = 0b0000000000000000;
-
-    TIM1->BDTR = 0b1000000000000000;
-    TIM1->DMACFGR = 0b0000000000000;
-
-    TIM1->CTLR1 |= 0b1;
-    TIM_Cmd(TIM1, ENABLE);
+    timer_init();
 
     printf("Timer init \r\n");
 
