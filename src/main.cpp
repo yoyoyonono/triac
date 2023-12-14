@@ -9,6 +9,7 @@
 //#define LOG_INTERRUPT
 //#define LOG_BUTTONVALS
 #define LOG_SWITCHES
+#define LOG_ALPHA
 
 #define KEY1_PORT GPIOA
 #define KEY1_PIN 0
@@ -50,10 +51,10 @@
 #define SEG_DIG4_PIN 6
 
 #define INT_PORT GPIOA
-#define INT_PIN 9
+#define INT_PIN 10
 
 #define TRIAC_PORT GPIOA
-#define TRIAC_PIN 8
+#define TRIAC_PIN 9
 
 #define FIRE_LENGTH_us 600
 
@@ -99,25 +100,29 @@ uint16_t wattage_to_delay(uint16_t wattage) {
 }
 
 void set_alpha(uint16_t alpha) {
-    TIM1->CH1CVR = alpha;
+    TIM1->CH4CVR = alpha;
     TIM1->ATRLR = alpha + FIRE_LENGTH_us;
+#ifdef LOG_ALPHA
+    printf("Alpha: %d\r\n", alpha);
+#endif
 }
 
 int main() {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     SystemCoreClockUpdate();
     Delay_Init();
-    USART_Printf_Init(115200);
+//    USART_Printf_Init(115200);
     printf(__TIMESTAMP__);
     printf("\r\n");
     printf("SystemCoreClock: %d\r\n", SystemCoreClock);
 
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-    RCC_APB1PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, DISABLE);
+    USART_Cmd(USART1, DISABLE);
 
     pinMode(KEY1_PORT, KEY1_PIN, INPUT_ANALOG);
     pinMode(KEY2_PORT, KEY2_PIN, INPUT_ANALOG);
@@ -138,7 +143,7 @@ int main() {
     digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, HIGH);
     digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, HIGH);
 
-    printf("Keys init");
+    printf("Keys init\r\n");
 
     TKEY_CR |= 0x51000000;
     
@@ -148,8 +153,10 @@ int main() {
     pinMode(INT_PORT, INT_PIN, INPUT);
 
     // https://www.youtube.com/watch?v=uSq42wN4JIU
+
+    RCC_APB1PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE); 
     
-    TIM1->CTLR1 = 0b010001001; 
+    TIM1->CTLR1 = 0b010001000; 
     TIM1->CTLR2 = 0b000000000000000;
     TIM1->SMCFGR = 0b0000000001100110;
     TIM1->DMAINTENR = 0b000000000000000;
@@ -159,7 +166,7 @@ int main() {
     TIM1->CHCTLR2 = 0b0000000000000000;
     TIM1->CCER = 0b0000010100001;
     TIM1->CNT = 0b0000000000000000;
-    TIM1->PSC = 0b0000000001001000;
+    TIM1->PSC = 0b0000000001001001;
     TIM1->ATRLR = 0b0000000000000000;
     TIM1->RPTCR = 0b00000000;
 
@@ -170,6 +177,8 @@ int main() {
 
     TIM1->BDTR = 0b1000000000000000;
     TIM1->DMACFGR = 0b0000000000000;
+
+    TIM1->CTLR1 |= 0b1;
 
     printf("Timer init \r\n");
 
@@ -184,10 +193,10 @@ int main() {
     while (true) {
         if (firing_delay != target_firing_delay) {
             if (firing_delay < target_firing_delay) {
-                firing_delay += 2;
+                firing_delay++;
             }
             else {
-                firing_delay -= 2;
+                firing_delay--;
             }
             set_alpha(firing_delay);
         }
