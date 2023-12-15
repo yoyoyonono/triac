@@ -72,6 +72,8 @@ const uint16_t wattage_delay_lookup[] = {8640, 8064, 7616, 7216, 6864, 6544, 622
 volatile uint16_t firing_delay = 8704;
 uint16_t target_firing_delay = 8640;
 uint16_t current_wattage = 200;
+uint8_t read_count = 0;
+uint64_t last_buzzer = 0;
 
 bool switch_states[] = {false, false, false, false, false, false};
 bool previous_switch_states[] = {false, false, false, false, false, false};
@@ -98,10 +100,12 @@ Display display = Display(SEG_A_PORT, SEG_A_PIN,
                           SEG_DIG4_PORT, SEG_DIG4_PIN,
                           COMMON_CATHODE);
 
-uint8_t read_count = 0;
-
 uint16_t wattage_to_delay(uint16_t wattage) {
     return wattage_delay_lookup[wattage / 100 - 1];
+}
+
+uint64_t get_tick() {
+    return (SysTick->CNTL0) + (SysTick->CNTL1 << 8) + (SysTick->CNTL2 << 16) + (SysTick->CNTL3 << 24) + (SysTick->CNTH0 << 32) + (SysTick->CNTH1 << 40) + (SysTick->CNTH2 << 48) + (SysTick->CNTH3 << 56);
 }
 
 int main() {
@@ -171,6 +175,12 @@ int main() {
 
     printf("buzzer\r\n");
 
+    SysTick->CTLR |= 1;
+
+    printf("tick init\r\n");
+
+    printf("%d", (int)get_tick());
+
     while (true) {
         if (firing_delay != target_firing_delay) {
             if (firing_delay < target_firing_delay) {
@@ -183,6 +193,9 @@ int main() {
             display.refresh();
         }
         display.allOff();
+        if (get_tick() - last_buzzer > 1000000) {
+            TIM2->CTLR1 &= (~1);
+        }
         for (uint8_t i = 0; i < 6; i++) {
             switch_states[i] = touch[i].is_pressed();
 #ifdef LOG_BUTTONVALS
@@ -205,7 +218,8 @@ int main() {
         }
         printf("\r\n");
 #endif
-
+        TIM2->CTLR1 |= 1;
+        last_buzzer = get_tick();
         if (switch_states[0]) {
             current_wattage -= 200;
             if (current_wattage < 200) {
