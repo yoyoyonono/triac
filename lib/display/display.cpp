@@ -1,7 +1,9 @@
 #include "display.hpp"
-#include "util.hpp"
-#include "asciimap.hpp"
+
 #include <cstddef>
+
+#include "asciimap.hpp"
+#include "util.hpp"
 
 Display::Display(GPIO_TypeDef *SEG_A_PORT, uint8_t SEG_A_PIN,
                  GPIO_TypeDef *SEG_B_PORT, uint8_t SEG_B_PIN,
@@ -63,7 +65,7 @@ Display::Display(GPIO_TypeDef *SEG_A_PORT, uint8_t SEG_A_PIN,
 
     current_digit = 0;
 
-    asciiMap = AsciiMap(); 
+    asciiMap = AsciiMap();
 }
 
 void Display::refresh() {
@@ -79,7 +81,7 @@ void Display::refresh() {
         digitalWrite(SEG_G_PORT, SEG_G_PIN, LOW);
         digitalWrite(SEG_DP_PORT, SEG_DP_PIN, LOW);
 
-        //set cathodes
+        // set cathodes
         switch (current_digit) {
             case 0:
                 digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, LOW);
@@ -94,14 +96,14 @@ void Display::refresh() {
                 digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, HIGH);
                 digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, HIGH);
                 break;
-            
+
             case 2:
                 digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, HIGH);
                 digitalWrite(SEG_DIG2_PORT, SEG_DIG2_PIN, HIGH);
                 digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, LOW);
                 digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, HIGH);
                 break;
-            
+
             case 3:
                 digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, HIGH);
                 digitalWrite(SEG_DIG2_PORT, SEG_DIG2_PIN, HIGH);
@@ -110,7 +112,7 @@ void Display::refresh() {
                 break;
         }
 
-        // bit order is dp g f e d c b a 
+        // bit order is dp g f e d c b a
 
         digitalWrite(SEG_A_PORT, SEG_A_PIN, (digits[current_digit] & std::byte(0b00000001)) == std::byte(0b00000001));
         digitalWrite(SEG_B_PORT, SEG_B_PIN, (digits[current_digit] & std::byte(0b00000010)) == std::byte(0b00000010));
@@ -121,8 +123,7 @@ void Display::refresh() {
         digitalWrite(SEG_G_PORT, SEG_G_PIN, (digits[current_digit] & std::byte(0b01000000)) == std::byte(0b01000000));
         digitalWrite(SEG_DP_PORT, SEG_DP_PIN, (digits[current_digit] & std::byte(0b10000000)) == std::byte(0b10000000));
 
-    }
-    else {
+    } else {
         switch (current_digit) {
             case 0:
                 digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, HIGH);
@@ -137,22 +138,21 @@ void Display::refresh() {
                 digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, LOW);
                 digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, LOW);
                 break;
-            
+
             case 2:
                 digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, LOW);
                 digitalWrite(SEG_DIG2_PORT, SEG_DIG2_PIN, LOW);
                 digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, HIGH);
                 digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, LOW);
                 break;
-            
+
             case 3:
                 digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, LOW);
                 digitalWrite(SEG_DIG2_PORT, SEG_DIG2_PIN, LOW);
                 digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, LOW);
                 digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, HIGH);
-                break; 
+                break;
         }
-
 
         // bit order is dp g f e d c b a
 
@@ -182,7 +182,7 @@ void Display::clear() {
     }
 }
 
-void Display::print(char * str) {
+void Display::print(char *str) {
     // set byte values based on ascii lookup
     for (int i = 0; i < 4; i++) {
         digits[i] = std::byte(asciiMap.map[str[i] - 32]);
@@ -207,15 +207,15 @@ void Display::printNumber(int16_t number) {
 
 void Display::printTemperature(int16_t temperature) {
     printNumber(temperature * 10);
-    digits[3] = std::byte(0b01100011); // degree symbol
+    digits[3] = std::byte(0b01100011);  // degree symbol
 }
 
 void Display::printTime(uint8_t hour, uint8_t min) {
     printNumber(hour * 100 + min);
-    digits[2] |= std::byte(0b10000000); // colon
+    digits[2] |= std::byte(0b10000000);  // colon
 }
 
-void Display::printRaw(std::byte * raw) {
+void Display::printRaw(std::byte *raw) {
     for (int i = 0; i < 4; i++) {
         digits[i] = raw[i];
     }
@@ -234,8 +234,7 @@ void Display::allOff() {
         digitalWrite(SEG_DIG2_PORT, SEG_DIG2_PIN, HIGH);
         digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, HIGH);
         digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, HIGH);
-    } 
-    else {
+    } else {
         digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, LOW);
         digitalWrite(SEG_DIG2_PORT, SEG_DIG2_PIN, LOW);
         digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, LOW);

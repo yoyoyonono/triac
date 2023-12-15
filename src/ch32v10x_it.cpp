@@ -4,11 +4,11 @@
  * Version            : V1.0.0
  * Date               : 2020/04/30
  * Description        : Main Interrupt Service Routines.
-*********************************************************************************
-* Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
-* Attention: This software (modified or not) and binary are used for 
-* microcontroller manufactured by Nanjing Qinheng Microelectronics.
-*******************************************************************************/
+ *********************************************************************************
+ * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
+ * Attention: This software (modified or not) and binary are used for
+ * microcontroller manufactured by Nanjing Qinheng Microelectronics.
+ *******************************************************************************/
 #include "ch32v10x_it.h"
 
 extern "C" void NMI_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
@@ -22,8 +22,7 @@ extern "C" void EXTI9_5_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt
  *
  * @return  none
  */
-void NMI_Handler(void)
-{
+void NMI_Handler(void) {
 }
 
 /*********************************************************************
@@ -33,10 +32,8 @@ void NMI_Handler(void)
  *
  * @return  none
  */
-void HardFault_Handler(void)
-{
-    while(1)
-    {
+void HardFault_Handler(void) {
+    while (1) {
     }
 }
 
@@ -47,10 +44,8 @@ void HardFault_Handler(void)
  *
  * @return  none
  */
-__weak_symbol void EXTI9_5_IRQHandler(void)
-{
-    if(EXTI_GetITStatus(EXTI_Line8) != RESET)
-    {
+__weak_symbol void EXTI9_5_IRQHandler(void) {
+    if (EXTI_GetITStatus(EXTI_Line8) != RESET) {
         printf("Run at EXTI\r\n");
         EXTI_ClearITPendingBit(EXTI_Line8); /* Clear Flag */
     }
