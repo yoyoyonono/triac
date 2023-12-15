@@ -9,7 +9,7 @@
 
 // #define LOG_INTERRUPT
 // #define LOG_BUTTONVALS
-// #define LOG_SWITCHES
+#define LOG_SWITCHES
 // #define LOG_ALPHA
 
 #define KEY1_PORT GPIOA
@@ -75,8 +75,12 @@ uint16_t current_wattage = 200;
 uint8_t read_count = 0;
 uint64_t last_buzzer = 0;
 
+static uint8_t time_us = 0;
+static uint16_t time_ms = 0;
+
 bool switch_states[] = {false, false, false, false, false, false};
 bool previous_switch_states[] = {false, false, false, false, false, false};
+const bool all_false_switches[] = {false, false, false, false, false, false};
 
 TouchButton touch[] = {
     TouchButton(ADC_Channel_0, 1500),
@@ -177,6 +181,9 @@ int main() {
 
     SysTick->CTLR |= 1;
 
+    time_us = SystemCoreClock / 8000000;
+    time_ms = (uint16_t)time_us * 1000;
+
     printf("tick init\r\n");
 
     printf("%d", (int)get_tick());
@@ -193,7 +200,7 @@ int main() {
             display.refresh();
         }
         display.allOff();
-        if (get_tick() - last_buzzer > 1000000) {
+        if (get_tick() - last_buzzer > time_ms * 250) {
             TIM2->CTLR1 &= (~1);
         }
         for (uint8_t i = 0; i < 6; i++) {
@@ -207,7 +214,7 @@ int main() {
 #endif
         read_count++;
 
-        if (!memcmp(switch_states, previous_switch_states, 6)) {
+        if (memcmp(switch_states, previous_switch_states, 6) == 0) {
             continue;
         }
         memcpy(previous_switch_states, switch_states, 6);
@@ -218,6 +225,9 @@ int main() {
         }
         printf("\r\n");
 #endif
+        if (memcmp(switch_states, all_false_switches, 6) == 0) {
+            continue;
+        }
         TIM2->CTLR1 |= 1;
         last_buzzer = get_tick();
         if (switch_states[0]) {
