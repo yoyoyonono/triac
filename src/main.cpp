@@ -166,11 +166,13 @@ int main() {
 
     // buzz for one second
 
-    for (int i = 0; i < 1000; i++) {
-        TIM2->CTLR1 |= 1;
-        delayMicroseconds(1000);
-        TIM2->CTLR1 &= (~1);
+    uint64_t start = get_tick();
+    TIM2->CTLR1 |= 1;
+    display.print("NIC ");
+    while (get_tick() - start < time_ms * 1000) {
+        display.refresh();
     }
+    TIM2->CTLR1 &= (~1);
 
     printf("buzzer\r\n");
 
