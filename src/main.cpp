@@ -51,6 +51,9 @@
 #define SEG_DIG4_PORT GPIOA
 #define SEG_DIG4_PIN 6
 
+#define BUZZER_PORT GPIOB
+#define BUZZER_PIN 10
+
 #define INT_PORT GPIOA
 #define INT_PIN 15
 
@@ -60,6 +63,9 @@
 #define FIRE_LENGTH_us 600
 
 extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+
+void exti_init();
+void timer_init();
 
 const uint16_t wattage_delay_lookup[] = {8640, 8064, 7616, 7216, 6864, 6544, 6224, 5920, 5632, 5344, 5056, 4768, 4480, 4192, 3904, 3600, 3264, 2928, 2560, 2128, 1616, 864};
 
@@ -141,23 +147,7 @@ int main() {
 
     ADC_Cmd(ADC1, ENABLE);
 
-    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
-
-    EXTI_InitTypeDef EXTI_InitStructure = {0};
-    EXTI_InitStructure.EXTI_Line = EXTI_Line15;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTI_InitStructure);
-
-    printf("EXTI Init ");
-
-    NVIC_InitTypeDef NVIC_InitStructure = {0};
-    NVIC_InitStructure.NVIC_IRQChannel = EXTI9_5_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
+    exti_init();
 
     digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
 
@@ -165,7 +155,21 @@ int main() {
 
     display.printNumber(current_wattage);
 
-    printf("Display init \r\n");
+    printf("Display init\r\n");
+
+    timer_init();
+
+    printf("Buzzer init\r\n");
+
+    // buzz for one second
+
+    for (int i = 0; i < 1000; i++) {
+        TIM2->CTLR1 |= 1;
+        delayMicroseconds(1000);
+        TIM2->CTLR1 &= (~1);
+    }
+
+    printf("buzzer\r\n");
 
     while (true) {
         if (firing_delay != target_firing_delay) {
@@ -201,6 +205,7 @@ int main() {
         }
         printf("\r\n");
 #endif
+
         if (switch_states[0]) {
             current_wattage -= 200;
             if (current_wattage < 200) {
@@ -220,6 +225,49 @@ int main() {
 #endif
     }
     return 0;
+}
+
+void timer_init()
+{
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+    
+    GPIO_PinRemapConfig(GPIO_FullRemap_TIM2, ENABLE);
+
+    GPIO_InitTypeDef GPIO_InitStructure = {0};
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+    TIM2->PSC = 72-1;
+    TIM2->ATRLR = 1000;
+    TIM2->CNT = 0;
+    TIM2->CHCTLR2 = 0b0000000001100000;
+    TIM2->CCER = 0b0000000100000000;
+    TIM2->CH3CVR = 500;
+
+}
+
+void exti_init() {
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
+
+    EXTI_InitTypeDef EXTI_InitStructure = {0};
+    EXTI_InitStructure.EXTI_Line = EXTI_Line15;
+    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+    EXTI_Init(&EXTI_InitStructure);
+
+    printf("EXTI Init\r\n");
+
+    NVIC_InitTypeDef NVIC_InitStructure = {0};
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI9_5_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
 }
 
 extern "C" void EXTI15_10_IRQHandler(void) {
