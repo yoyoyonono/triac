@@ -189,8 +189,7 @@ void Display::print(char *str) {
     }
 }
 
-void Display::printNumber(int16_t number) {
-    // convert positive number to string without sprintf
+void Display::printNumber(int16_t number, bool zeroPadding) {
     char str[4];
     if (number < 0) {
         number = -number;
@@ -202,6 +201,17 @@ void Display::printNumber(int16_t number) {
     str[1] = ((number % 1000) / 100) + 48;
     str[2] = ((number % 100) / 10) + 48;
     str[3] = (number % 10) + 48;
+    if (!zeroPadding) {
+        if (str[0] == 48) {
+            str[0] = 32;
+        }
+        if (str[0] == 48 && str[1] == 48) {
+            str[1] = 32;
+        }
+        if (str[0] == 48 && str[1] == 48 && str[2] == 48) {
+            str[2] = 32;
+        }
+    }
     print(str);
 }
 

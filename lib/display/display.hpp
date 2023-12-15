@@ -63,7 +63,7 @@ class Display {
     // TODO:
     //        void setBacklight(uint8_t value);
     void print(char *str);
-    void printNumber(int16_t number);
+    void printNumber(int16_t number, bool zeroPadding = false);
     void printTemperature(int16_t temperature);
     void printTime(uint8_t hour, uint8_t min);
     void printRaw(std::byte *raw);
