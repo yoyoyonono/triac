@@ -85,12 +85,12 @@ bool previous_switch_states[] = {false, false, false, false, false, false};
 const bool all_false_switches[] = {false, false, false, false, false, false};
 
 TouchButton touch[] = {
-    TouchButton(ADC_Channel_0, 1500),
-    TouchButton(ADC_Channel_1, 1500),
-    TouchButton(ADC_Channel_2, 1500),
-    TouchButton(ADC_Channel_3, 1500),
-    TouchButton(ADC_Channel_4, 1500),
-    TouchButton(ADC_Channel_5, 1500)};
+    TouchButton(ADC_Channel_0, 1900),
+    TouchButton(ADC_Channel_1, 1900),
+    TouchButton(ADC_Channel_2, 1900),
+    TouchButton(ADC_Channel_3, 1900),
+    TouchButton(ADC_Channel_4, 1900),
+    TouchButton(ADC_Channel_5, 1900)};
 
 Display display = Display(SEG_A_PORT, SEG_A_PIN,
                           SEG_B_PORT, SEG_B_PIN,
