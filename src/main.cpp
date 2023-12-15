@@ -66,6 +66,8 @@ extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interru
 
 void exti_init();
 void timer_init();
+uint16_t wattage_to_delay(uint16_t wattage);
+uint64_t get_tick();
 
 const uint16_t wattage_delay_lookup[] = {8640, 8064, 7616, 7216, 6864, 6544, 6224, 5920, 5632, 5344, 5056, 4768, 4480, 4192, 3904, 3600, 3264, 2928, 2560, 2128, 1616, 864};
 
@@ -104,20 +106,6 @@ Display display = Display(SEG_A_PORT, SEG_A_PIN,
                           SEG_DIG4_PORT, SEG_DIG4_PIN,
                           COMMON_CATHODE);
 
-uint16_t wattage_to_delay(uint16_t wattage) {
-    return wattage_delay_lookup[wattage / 100 - 1];
-}
-
-uint64_t get_tick() {
-    return ((uint64_t)SysTick->CNTL0) +
-           ((uint64_t)SysTick->CNTL1 << 8) +
-           ((uint64_t)SysTick->CNTL2 << 16) +
-           ((uint64_t)SysTick->CNTL3 << 24) +
-           ((uint64_t)SysTick->CNTH0 << 32) +
-           ((uint64_t)SysTick->CNTH1 << 40) +
-           ((uint64_t)SysTick->CNTH2 << 48) +
-           ((uint64_t)SysTick->CNTH3 << 56);
-}
 
 int main() {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -312,4 +300,19 @@ extern "C" void EXTI15_10_IRQHandler(void) {
         digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
         EXTI_ClearITPendingBit(EXTI_Line15); /* Clear Flag */
     }
+}
+
+uint16_t wattage_to_delay(uint16_t wattage) {
+    return wattage_delay_lookup[wattage / 100 - 1];
+}
+
+uint64_t get_tick() {
+    return (static_cast<uint64_t>(SysTick->CNTL0)) +
+           (static_cast<uint64_t>(SysTick->CNTL1) << 8) +
+           (static_cast<uint64_t>(SysTick->CNTL2) << 16) +
+           (static_cast<uint64_t>(SysTick->CNTL3) << 24) +
+           (static_cast<uint64_t>(SysTick->CNTH0) << 32) +
+           (static_cast<uint64_t>(SysTick->CNTH1) << 40) +
+           (static_cast<uint64_t>(SysTick->CNTH2) << 48) +
+           (static_cast<uint64_t>(SysTick->CNTH3) << 56);
 }
