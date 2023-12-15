@@ -9,7 +9,7 @@
 
 // #define LOG_INTERRUPT
 // #define LOG_BUTTONVALS
-#define LOG_SWITCHES
+// #define LOG_SWITCHES
 // #define LOG_ALPHA
 
 #define KEY1_PORT GPIOA
@@ -109,7 +109,14 @@ uint16_t wattage_to_delay(uint16_t wattage) {
 }
 
 uint64_t get_tick() {
-    return (SysTick->CNTL0) + (SysTick->CNTL1 << 8) + (SysTick->CNTL2 << 16) + (SysTick->CNTL3 << 24) + (SysTick->CNTH0 << 32) + (SysTick->CNTH1 << 40) + (SysTick->CNTH2 << 48) + (SysTick->CNTH3 << 56);
+    return ((uint64_t)SysTick->CNTL0) +
+           ((uint64_t)SysTick->CNTL1 << 8) +
+           ((uint64_t)SysTick->CNTL2 << 16) +
+           ((uint64_t)SysTick->CNTL3 << 24) +
+           ((uint64_t)SysTick->CNTH0 << 32) +
+           ((uint64_t)SysTick->CNTH1 << 40) +
+           ((uint64_t)SysTick->CNTH2 << 48) +
+           ((uint64_t)SysTick->CNTH3 << 56);
 }
 
 int main() {
@@ -200,7 +207,7 @@ int main() {
             display.refresh();
         }
         display.allOff();
-        if (get_tick() - last_buzzer > time_ms * 250) {
+        if (get_tick() - last_buzzer > time_ms * 125) {
             TIM2->CTLR1 &= (~1);
         }
         for (uint8_t i = 0; i < 6; i++) {
