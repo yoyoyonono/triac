@@ -51,6 +51,9 @@
 #define SEG_DIG4_PORT GPIOA
 #define SEG_DIG4_PIN 6
 
+#define BUZZER_PORT GPIOB
+#define BUZZER_PIN 10
+
 #define INT_PORT GPIOA
 #define INT_PIN 15
 
@@ -61,14 +64,25 @@
 
 extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
+void exti_init();
+void timer_init();
+uint16_t wattage_to_delay(uint16_t wattage);
+uint64_t get_tick();
+
 const uint16_t wattage_delay_lookup[] = {8640, 8064, 7616, 7216, 6864, 6544, 6224, 5920, 5632, 5344, 5056, 4768, 4480, 4192, 3904, 3600, 3264, 2928, 2560, 2128, 1616, 864};
 
 volatile uint16_t firing_delay = 8704;
 uint16_t target_firing_delay = 8640;
 uint16_t current_wattage = 200;
+uint8_t read_count = 0;
+uint64_t last_buzzer = 0;
+
+static uint8_t time_us = 0;
+static uint16_t time_ms = 0;
 
 bool switch_states[] = {false, false, false, false, false, false};
 bool previous_switch_states[] = {false, false, false, false, false, false};
+const bool all_false_switches[] = {false, false, false, false, false, false};
 
 TouchButton touch[] = {
     TouchButton(ADC_Channel_0, 1500),
@@ -92,11 +106,6 @@ Display display = Display(SEG_A_PORT, SEG_A_PIN,
                           SEG_DIG4_PORT, SEG_DIG4_PIN,
                           COMMON_CATHODE);
 
-uint8_t read_count = 0;
-
-uint16_t wattage_to_delay(uint16_t wattage) {
-    return wattage_delay_lookup[wattage / 100 - 1];
-}
 
 int main() {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -141,23 +150,7 @@ int main() {
 
     ADC_Cmd(ADC1, ENABLE);
 
-    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
-
-    EXTI_InitTypeDef EXTI_InitStructure = {0};
-    EXTI_InitStructure.EXTI_Line = EXTI_Line15;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTI_InitStructure);
-
-    printf("EXTI Init ");
-
-    NVIC_InitTypeDef NVIC_InitStructure = {0};
-    NVIC_InitStructure.NVIC_IRQChannel = EXTI9_5_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
+    exti_init();
 
     digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
 
@@ -165,7 +158,30 @@ int main() {
 
     display.printNumber(current_wattage);
 
-    printf("Display init \r\n");
+    printf("Display init\r\n");
+
+    timer_init();
+
+    printf("Buzzer init\r\n");
+
+    // buzz for one second
+
+    for (int i = 0; i < 1000; i++) {
+        TIM2->CTLR1 |= 1;
+        delayMicroseconds(1000);
+        TIM2->CTLR1 &= (~1);
+    }
+
+    printf("buzzer\r\n");
+
+    SysTick->CTLR |= 1;
+
+    time_us = SystemCoreClock / 8000000;
+    time_ms = (uint16_t)time_us * 1000;
+
+    printf("tick init\r\n");
+
+    printf("%d", (int)get_tick());
 
     while (true) {
         if (firing_delay != target_firing_delay) {
@@ -179,6 +195,9 @@ int main() {
             display.refresh();
         }
         display.allOff();
+        if (get_tick() - last_buzzer > time_ms * 125) {
+            TIM2->CTLR1 &= (~1);
+        }
         for (uint8_t i = 0; i < 6; i++) {
             switch_states[i] = touch[i].is_pressed();
 #ifdef LOG_BUTTONVALS
@@ -190,7 +209,7 @@ int main() {
 #endif
         read_count++;
 
-        if (!memcmp(switch_states, previous_switch_states, 6)) {
+        if (memcmp(switch_states, previous_switch_states, 6) == 0) {
             continue;
         }
         memcpy(previous_switch_states, switch_states, 6);
@@ -201,6 +220,11 @@ int main() {
         }
         printf("\r\n");
 #endif
+        if (memcmp(switch_states, all_false_switches, 6) == 0) {
+            continue;
+        }
+        TIM2->CTLR1 |= 1;
+        last_buzzer = get_tick();
         if (switch_states[0]) {
             current_wattage -= 200;
             if (current_wattage < 200) {
@@ -222,6 +246,47 @@ int main() {
     return 0;
 }
 
+void timer_init() {
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+
+    GPIO_PinRemapConfig(GPIO_FullRemap_TIM2, ENABLE);
+
+    GPIO_InitTypeDef GPIO_InitStructure = {0};
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+    TIM2->PSC = SystemCoreClock / 1000000 - 1;
+    TIM2->ATRLR = 1000;
+    TIM2->CNT = 0;
+    TIM2->CHCTLR2 = 0b0000000001100000;
+    TIM2->CCER = 0b0000000100000000;
+    TIM2->CH3CVR = 500;
+}
+
+void exti_init() {
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
+
+    EXTI_InitTypeDef EXTI_InitStructure = {0};
+    EXTI_InitStructure.EXTI_Line = EXTI_Line15;
+    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+    EXTI_Init(&EXTI_InitStructure);
+
+    printf("EXTI Init\r\n");
+
+    NVIC_InitTypeDef NVIC_InitStructure = {0};
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI9_5_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+}
+
 extern "C" void EXTI15_10_IRQHandler(void) {
     if (EXTI_GetITStatus(EXTI_Line15) != RESET) {
         // turn off all digits
@@ -235,4 +300,19 @@ extern "C" void EXTI15_10_IRQHandler(void) {
         digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
         EXTI_ClearITPendingBit(EXTI_Line15); /* Clear Flag */
     }
+}
+
+uint16_t wattage_to_delay(uint16_t wattage) {
+    return wattage_delay_lookup[wattage / 100 - 1];
+}
+
+uint64_t get_tick() {
+    return (static_cast<uint64_t>(SysTick->CNTL0)) +
+           (static_cast<uint64_t>(SysTick->CNTL1) << 8) +
+           (static_cast<uint64_t>(SysTick->CNTL2) << 16) +
+           (static_cast<uint64_t>(SysTick->CNTL3) << 24) +
+           (static_cast<uint64_t>(SysTick->CNTH0) << 32) +
+           (static_cast<uint64_t>(SysTick->CNTH1) << 40) +
+           (static_cast<uint64_t>(SysTick->CNTH2) << 48) +
+           (static_cast<uint64_t>(SysTick->CNTH3) << 56);
 }
