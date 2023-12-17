@@ -278,26 +278,26 @@ int main() {
 
     printf("%d", (int)get_tick());
 
-    xTaskCreate((TaskFunction_t)task_triac,
-                (const char *)"triac",
-                (uint16_t)TASK_TRIAC_STACK_SIZE,
-                (void *)NULL,
-                (UBaseType_t)TASK_TRIAC_PRIORITY,
-                (TaskHandle_t *)&task_triac_handle);
+    xTaskCreate(static_cast<TaskFunction_t>(task_triac),
+                static_cast<const char *>("triac"),
+                static_cast<uint16_t>(TASK_TRIAC_STACK_SIZE),
+                nullptr,
+                static_cast<UBaseType_t>(TASK_TRIAC_PRIORITY),
+                static_cast<TaskHandle_t *>(&task_triac_handle));
     
-    xTaskCreate((TaskFunction_t)task_display,
-                (const char *)"display",
-                (uint16_t)TASK_DISPLAY_STACK_SIZE,
-                (void *)NULL,
-                (UBaseType_t)TASK_DISPLAY_PRIORITY,
-                (TaskHandle_t *)&task_display_handle);
+    xTaskCreate(static_cast<TaskFunction_t>(task_display),
+                static_cast<const char *>("display"),
+                static_cast<uint16_t>(TASK_DISPLAY_STACK_SIZE),
+                nullptr,
+                static_cast<UBaseType_t>(TASK_DISPLAY_PRIORITY),
+                static_cast<TaskHandle_t *>(&task_display_handle));
     
-    xTaskCreate((TaskFunction_t)task_button,
-                (const char *)"button",
-                (uint16_t)TASK_BUTTON_STACK_SIZE,
-                (void *)NULL,
-                (UBaseType_t)TASK_BUTTON_PRIORITY,
-                (TaskHandle_t *)&task_button_handle);
+    xTaskCreate(static_cast<TaskFunction_t>(task_button),
+                static_cast<const char *>("button"),
+                static_cast<uint16_t>(TASK_BUTTON_STACK_SIZE),
+                nullptr,
+                static_cast<UBaseType_t>(TASK_BUTTON_PRIORITY),
+                static_cast<TaskHandle_t *>(&task_button_handle));
 
     printf("Tasks created\r\n");
 
