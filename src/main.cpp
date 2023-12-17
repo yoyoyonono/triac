@@ -1,7 +1,7 @@
+#include <FreeRTOS.h>
 #include <ch32v10x.h>
 #include <debug.h>
 #include <string.h>
-#include <FreeRTOS.h>
 #include <task.h>
 
 #include "display.hpp"
@@ -130,7 +130,7 @@ void task_triac(void *pvParameters) {
             }
         }
         if (toFire) {
-            vTaskDelay(firing_delay_us/1000);
+            vTaskDelay(firing_delay_us / 1000);
             delayMicroseconds(firing_delay_us % 1000);
             digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
             delayMicroseconds(FIRE_LENGTH_us);
@@ -197,8 +197,6 @@ void task_button(void *pvParameters) {
         TIM2->CTLR1 &= (~1);
     }
 }
-
-
 
 int main() {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -284,14 +282,14 @@ int main() {
                 nullptr,
                 static_cast<UBaseType_t>(TASK_TRIAC_PRIORITY),
                 static_cast<TaskHandle_t *>(&task_triac_handle));
-    
+
     xTaskCreate(static_cast<TaskFunction_t>(task_display),
                 static_cast<const char *>("display"),
                 static_cast<uint16_t>(TASK_DISPLAY_STACK_SIZE),
                 nullptr,
                 static_cast<UBaseType_t>(TASK_DISPLAY_PRIORITY),
                 static_cast<TaskHandle_t *>(&task_display_handle));
-    
+
     xTaskCreate(static_cast<TaskFunction_t>(task_button),
                 static_cast<const char *>("button"),
                 static_cast<uint16_t>(TASK_BUTTON_STACK_SIZE),
