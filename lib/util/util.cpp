@@ -39,3 +39,7 @@ void digitalWrite(GPIO_TypeDef *GPIOx, uint8_t PIN, BitAction VAL) {
 void digitalWrite(GPIO_TypeDef *GPIOx, uint8_t PIN, bool VAL) {
     digitalWrite(GPIOx, PIN, VAL ? HIGH : LOW);
 }
+
+uint8_t digitalRead(GPIO_TypeDef *GPIOx, uint8_t PIN) {
+    return GPIO_ReadInputDataBit(GPIOx, 1 << PIN);
+}
