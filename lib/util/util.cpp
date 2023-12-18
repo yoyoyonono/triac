@@ -43,3 +43,10 @@ void digitalWrite(GPIO_TypeDef *GPIOx, uint8_t PIN, bool VAL) {
 uint8_t digitalRead(GPIO_TypeDef *GPIOx, uint8_t PIN) {
     return GPIO_ReadInputDataBit(GPIOx, 1 << PIN);
 }
+
+uint16_t analogRead(ADC_TypeDef *ADCx, uint8_t CHANNEL) {
+    ADC_RegularChannelConfig(ADCx, CHANNEL, 1, ADC_SampleTime_239Cycles5);
+    ADC_SoftwareStartConvCmd(ADCx, ENABLE);
+    while (ADC_GetFlagStatus(ADCx, ADC_FLAG_EOC) == RESET);
+    return ADC_GetConversionValue(ADCx);
+}
