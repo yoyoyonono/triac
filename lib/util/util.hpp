@@ -20,3 +20,4 @@ void pinMode(GPIO_TypeDef *GPIOx, uint8_t PIN, GPIOMode_TypeDef MODE);
 
 void digitalWrite(GPIO_TypeDef *GPIOx, uint8_t PIN, BitAction VAL);
 void digitalWrite(GPIO_TypeDef *GPIOx, uint8_t PIN, bool VAL);
+uint8_t digitalRead(GPIO_TypeDef *GPIOx, uint8_t PIN);
