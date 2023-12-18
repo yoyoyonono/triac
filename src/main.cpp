@@ -11,6 +11,7 @@
 // #define LOG_BUTTONVALS
 // #define LOG_SWITCHES
 // #define LOG_ALPHA
+// #define LOG_BUZZER
 
 #define KEY1_PORT GPIOA
 #define KEY1_PIN 0
@@ -67,7 +68,7 @@ extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interru
 void exti_init();
 void timer_init();
 uint16_t wattage_to_delay(uint16_t wattage);
-uint64_t get_tick();
+int64_t get_tick();
 
 const uint16_t wattage_delay_lookup[] = {8640, 8064, 7616, 7216, 6864, 6544, 6224, 5920, 5632, 5344, 5056, 4768, 4480, 4192, 3904, 3600, 3264, 2928, 2560, 2128, 1616, 864};
 
@@ -80,17 +81,19 @@ uint64_t last_buzzer = 0;
 static uint8_t time_us = 0;
 static uint16_t time_ms = 0;
 
+uint16_t buzzer_loop_count = 0;
+
 bool switch_states[] = {false, false, false, false, false, false};
 bool previous_switch_states[] = {false, false, false, false, false, false};
 const bool all_false_switches[] = {false, false, false, false, false, false};
 
 TouchButton touch[] = {
-    TouchButton(ADC_Channel_0, 1900),
-    TouchButton(ADC_Channel_1, 1900),
-    TouchButton(ADC_Channel_2, 1900),
-    TouchButton(ADC_Channel_3, 1900),
-    TouchButton(ADC_Channel_4, 1900),
-    TouchButton(ADC_Channel_5, 1900)};
+    TouchButton(ADC_Channel_0, 1500),
+    TouchButton(ADC_Channel_1, 1500),
+    TouchButton(ADC_Channel_2, 1500),
+    TouchButton(ADC_Channel_3, 1500),
+    TouchButton(ADC_Channel_4, 1500),
+    TouchButton(ADC_Channel_5, 1500)};
 
 Display display = Display(SEG_A_PORT, SEG_A_PIN,
                           SEG_B_PORT, SEG_B_PIN,
@@ -105,7 +108,6 @@ Display display = Display(SEG_A_PORT, SEG_A_PIN,
                           SEG_DIG3_PORT, SEG_DIG3_PIN,
                           SEG_DIG4_PORT, SEG_DIG4_PIN,
                           COMMON_CATHODE);
-
 
 int main() {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -163,27 +165,23 @@ int main() {
     timer_init();
 
     printf("Buzzer init\r\n");
+    
+    time_us = SystemCoreClock / 8000000;
+    time_ms = (uint16_t)time_us * 1000;
+    printf("tick init\r\n");
+    printf("ms: %d\r\n", time_ms);
+    printf("us: %d\r\n", time_us);
 
     // buzz for one second
 
-    uint64_t start = get_tick();
-    TIM2->CTLR1 |= 1;
-    display.print("NIC ");
-    while (get_tick() - start < time_ms * 1000) {
-        display.refresh();
-    }
-    TIM2->CTLR1 &= (~1);
+    SysTick->CTLR |= 1;
+
 
     printf("buzzer\r\n");
 
-    SysTick->CTLR |= 1;
+    printf("%d", get_tick());
 
-    time_us = SystemCoreClock / 8000000;
-    time_ms = (uint16_t)time_us * 1000;
-
-    printf("tick init\r\n");
-
-    printf("%d", (int)get_tick());
+    display.printNumber(current_wattage);
 
     while (true) {
         if (firing_delay != target_firing_delay) {
@@ -197,8 +195,12 @@ int main() {
             display.refresh();
         }
         display.allOff();
-        if (get_tick() - last_buzzer > time_ms * 125) {
+        buzzer_loop_count++;
+        if (buzzer_loop_count > 10) {
             TIM2->CTLR1 &= (~1);
+#ifdef LOG_BUZZER
+            printf("Buzzer off %d\r\n", get_tick());
+#endif
         }
         for (uint8_t i = 0; i < 6; i++) {
             switch_states[i] = touch[i].is_pressed();
@@ -226,7 +228,10 @@ int main() {
             continue;
         }
         TIM2->CTLR1 |= 1;
-        last_buzzer = get_tick();
+#ifdef LOG_BUZZER
+        printf("Buzzer %d\r\n", get_tick());
+#endif
+        buzzer_loop_count = 0;
         if (switch_states[0]) {
             current_wattage -= 200;
             if (current_wattage < 200) {
@@ -308,7 +313,7 @@ uint16_t wattage_to_delay(uint16_t wattage) {
     return wattage_delay_lookup[wattage / 100 - 1];
 }
 
-uint64_t get_tick() {
+int64_t get_tick() {
     return (static_cast<uint64_t>(SysTick->CNTL0)) +
            (static_cast<uint64_t>(SysTick->CNTL1) << 8) +
            (static_cast<uint64_t>(SysTick->CNTL2) << 16) +
