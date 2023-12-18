@@ -8,10 +8,10 @@
 #include "tkey.hpp"
 #include "util.hpp"
 
-// #define LOG_INTERRUPT
-// #define LOG_BUTTONVALS
-// #define LOG_SWITCHES
-// #define LOG_ALPHA
+//#define LOG_INTERRUPT
+//#define LOG_BUTTONVALS
+//#define LOG_SWITCHES
+//#define LOG_ALPHA
 
 #define KEY1_PORT GPIOA
 #define KEY1_PIN 0
@@ -61,11 +61,11 @@
 #define TRIAC_PORT GPIOA
 #define TRIAC_PIN 12
 
-#define TASK_TRIAC_PRIORITY 5
-#define TASK_TRIAC_STACK_SIZE 256
-#define TASK_DISPLAY_PRIORITY 5
+#define TASK_TRIAC_TIMER_PRIORITY 5
+#define TASK_TRIAC_TIMER_STACK_SIZE 256
+#define TASK_DISPLAY_PRIORITY 7
 #define TASK_DISPLAY_STACK_SIZE 256
-#define TASK_BUTTON_PRIORITY 5
+#define TASK_BUTTON_PRIORITY 6
 #define TASK_BUTTON_STACK_SIZE 256
 
 #define FIRE_LENGTH_us 100
@@ -120,15 +120,8 @@ TaskHandle_t task_triac_handle;
 TaskHandle_t task_display_handle;
 TaskHandle_t task_button_handle;
 
-void task_triac(void *pvParameters) {
+void task_triac_fire(void *pvParameters) {
     while (true) {
-        if (firing_delay_us != target_firing_delay_us) {
-            if (firing_delay_us < target_firing_delay_us) {
-                firing_delay_us += 8;
-            } else {
-                firing_delay_us -= 8;
-            }
-        }
         if (toFire) {
             vTaskDelay(firing_delay_us / 1000);
             delayMicroseconds(firing_delay_us % 1000);
@@ -139,16 +132,29 @@ void task_triac(void *pvParameters) {
     }
 }
 
+void task_triac_timer(void *pvParameters) {
+    while (true) {
+        if (firing_delay_us != target_firing_delay_us) {
+            if (firing_delay_us < target_firing_delay_us) {
+                firing_delay_us += 8;
+            } else {
+                firing_delay_us -= 8;
+            }
+        }
+        vTaskDelay(100);
+    }
+}
+
 void task_display(void *pvParameters) {
     while (true) {
         display.refresh();
-        vTaskDelay(1);
-        display.allOff();
+        vTaskDelay(5);
     }
 }
 
 void task_button(void *pvParameters) {
     while (true) {
+        vTaskDelay(10);
         for (uint8_t i = 0; i < 6; i++) {
             switch_states[i] = touch[i].is_pressed();
 #ifdef LOG_BUTTONVALS
@@ -190,10 +196,10 @@ void task_button(void *pvParameters) {
         display.printNumber(current_wattage);
         target_firing_delay_us = wattage_to_delay(current_wattage);
 #ifdef LOG_SWITCHES
-        printf("Wattage: %d\tDelay: %d\r\n", current_wattage, target_firing_delay);
+        printf("Wattage: %d\tDelay: %d\r\n", current_wattage, target_firing_delay_us);
 #endif
         TIM2->CTLR1 |= 1;
-        vTaskDelay(250);
+        vTaskDelay(100);
         TIM2->CTLR1 &= (~1);
     }
 }
@@ -235,6 +241,9 @@ int main() {
     digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, HIGH);
     digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, HIGH);
 
+    time_us = SystemCoreClock / 8000000;
+    time_ms = (uint16_t)time_us * 1000;
+
     printf("Keys init\r\n");
 
     TKEY_CR |= 0x51000000;
@@ -252,11 +261,15 @@ int main() {
     printf("Display init\r\n");
 
     timer_init();
+    TIM2->CTLR1 &= (~1);
 
     printf("Buzzer init\r\n");
 
+    SysTick->CTLR |= 1;
+    
+    printf("tick init\r\n");
+    
     // buzz for one second
-
     uint64_t start = get_tick();
     TIM2->CTLR1 |= 1;
     display.print("NIC ");
@@ -267,20 +280,13 @@ int main() {
 
     printf("buzzer\r\n");
 
-    SysTick->CTLR |= 1;
+    printf("%d\r\n", (int)get_tick());
 
-    time_us = SystemCoreClock / 8000000;
-    time_ms = (uint16_t)time_us * 1000;
-
-    printf("tick init\r\n");
-
-    printf("%d", (int)get_tick());
-
-    xTaskCreate(static_cast<TaskFunction_t>(task_triac),
-                static_cast<const char *>("triac"),
-                static_cast<uint16_t>(TASK_TRIAC_STACK_SIZE),
+    xTaskCreate(static_cast<TaskFunction_t>(task_triac_timer),
+                static_cast<const char *>("triac timer"),
+                static_cast<uint16_t>(TASK_TRIAC_TIMER_STACK_SIZE),
                 nullptr,
-                static_cast<UBaseType_t>(TASK_TRIAC_PRIORITY),
+                static_cast<UBaseType_t>(TASK_TRIAC_TIMER_PRIORITY),
                 static_cast<TaskHandle_t *>(&task_triac_handle));
 
     xTaskCreate(static_cast<TaskFunction_t>(task_display),
@@ -302,6 +308,7 @@ int main() {
     vTaskStartScheduler();
 
     while (true) {
+        printf("should not be here\r\n");
     }
     return 0;
 }
@@ -349,12 +356,11 @@ void exti_init() {
 
 extern "C" void EXTI15_10_IRQHandler(void) {
     if (EXTI_GetITStatus(EXTI_Line15) != RESET) {
-        // turn off all digits
+        EXTI_ClearITPendingBit(EXTI_Line15); /* Clear Flag */
 #ifdef LOG_INTERRUPT
         printf("EXTI15_10_IRQHandler\r\n");
 #endif
         toFire = true;
-        EXTI_ClearITPendingBit(EXTI_Line15); /* Clear Flag */
     }
 }
 
