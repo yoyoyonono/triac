@@ -61,18 +61,19 @@
 #define TRIAC_PORT GPIOA
 #define TRIAC_PIN 12
 
-#define TASK_TRIAC_TIMER_PRIORITY 5
+#define TASK_TRIAC_FIRE_PRIORITY 10
+#define TASK_TRIAC_FIRE_STACK_SIZE 256
+#define TASK_TRIAC_TIMER_PRIORITY 4
 #define TASK_TRIAC_TIMER_STACK_SIZE 256
-#define TASK_DISPLAY_PRIORITY 7
+#define TASK_DISPLAY_PRIORITY 6
 #define TASK_DISPLAY_STACK_SIZE 256
-#define TASK_BUTTON_PRIORITY 6
+#define TASK_BUTTON_PRIORITY 5
 #define TASK_BUTTON_STACK_SIZE 256
 
 #define FIRE_LENGTH_us 100
 
 extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
-void exti_init();
 void timer_init();
 uint16_t wattage_to_delay(uint16_t wattage);
 uint64_t get_tick();
@@ -93,6 +94,8 @@ bool previous_switch_states[] = {false, false, false, false, false, false};
 const bool all_false_switches[] = {false, false, false, false, false, false};
 
 volatile bool toFire = false;
+
+BitAction last_zero_crossing = LOW;
 
 TouchButton touch[] = {
     TouchButton(ADC_Channel_0, 1900),
@@ -122,12 +125,18 @@ TaskHandle_t task_button_handle;
 
 void task_triac_fire(void *pvParameters) {
     while (true) {
-        if (toFire) {
-            vTaskDelay(firing_delay_us / 1000);
+        TickType_t xLastWakeTime = xTaskGetTickCount();
+        if (digitalRead(INT_PORT, INT_PIN) != last_zero_crossing) {
+            last_zero_crossing = last_zero_crossing == HIGH ? LOW : HIGH;
+#ifdef LOG_INTERRUPT
+            printf("INTERRUPT\r\n");
+#endif
+            vTaskDelayUntil(&xLastWakeTime, firing_delay_us / 1000);
             delayMicroseconds(firing_delay_us % 1000);
             digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
             delayMicroseconds(FIRE_LENGTH_us);
             digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
+            vTaskDelay(10 - (firing_delay_us / 1000) - 1);
         }
     }
 }
@@ -136,19 +145,26 @@ void task_triac_timer(void *pvParameters) {
     while (true) {
         if (firing_delay_us != target_firing_delay_us) {
             if (firing_delay_us < target_firing_delay_us) {
-                firing_delay_us += 8;
+                firing_delay_us += 16;
             } else {
-                firing_delay_us -= 8;
+                firing_delay_us -= 16;
             }
+#ifdef LOG_ALPHA
+        printf("firing_delay_us: %d\r\n", firing_delay_us);
+#endif
         }
-        vTaskDelay(100);
+        vTaskDelay(10);
     }
 }
 
 void task_display(void *pvParameters) {
     while (true) {
-        display.refresh();
-        vTaskDelay(5);
+        display.allOff();
+        for (uint8_t i = 0; i < 32; i++) {
+            display.refresh();
+        }
+        display.allOff();
+        vTaskDelay(10);
     }
 }
 
@@ -219,7 +235,7 @@ int main() {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
 
-    pinMode(INT_PORT, INT_PIN, INPUT_PULLDOWN);
+    pinMode(INT_PORT, INT_PIN, INPUT);
     pinMode(TRIAC_PORT, TRIAC_PIN, OUTPUT);
 
     pinMode(KEY1_PORT, KEY1_PIN, INPUT_ANALOG);
@@ -250,8 +266,6 @@ int main() {
 
     ADC_Cmd(ADC1, ENABLE);
 
-    exti_init();
-
     digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
 
     display.clear();
@@ -281,6 +295,13 @@ int main() {
     printf("buzzer\r\n");
 
     printf("%d\r\n", (int)get_tick());
+
+    xTaskCreate(static_cast<TaskFunction_t>(task_triac_fire),
+                static_cast<const char *>("triac fire"),
+                static_cast<uint16_t>(TASK_TRIAC_FIRE_STACK_SIZE),
+                nullptr,
+                static_cast<UBaseType_t>(TASK_TRIAC_FIRE_PRIORITY),
+                static_cast<TaskHandle_t *>(&task_triac_handle));
 
     xTaskCreate(static_cast<TaskFunction_t>(task_triac_timer),
                 static_cast<const char *>("triac timer"),
@@ -334,33 +355,12 @@ void timer_init() {
     TIM2->CH3CVR = 500;
 }
 
-void exti_init() {
-    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
-
-    EXTI_InitTypeDef EXTI_InitStructure = {0};
-    EXTI_InitStructure.EXTI_Line = EXTI_Line15;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTI_InitStructure);
-
-    printf("EXTI Init\r\n");
-
-    NVIC_InitTypeDef NVIC_InitStructure = {0};
-    NVIC_InitStructure.NVIC_IRQChannel = EXTI15_10_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
-}
-
 extern "C" void EXTI15_10_IRQHandler(void) {
     if (EXTI_GetITStatus(EXTI_Line15) != RESET) {
         EXTI_ClearITPendingBit(EXTI_Line15); /* Clear Flag */
 #ifdef LOG_INTERRUPT
         printf("EXTI15_10_IRQHandler\r\n");
 #endif
-        toFire = true;
     }
 }
 
