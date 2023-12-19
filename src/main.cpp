@@ -7,7 +7,7 @@
 #include "tkey.hpp"
 #include "util.hpp"
 
-//#define LOG_INTERRUPT
+// #define LOG_INTERRUPT
 // #define LOG_BUTTONVALS
 // #define LOG_SWITCHES
 // #define LOG_ALPHA
@@ -190,7 +190,7 @@ int main() {
     tim3_init();
 
     printf("Buzzer init\r\n");
-    
+
     time_us = SystemCoreClock / 8000000;
     time_ms = (uint16_t)time_us * 1000;
     printf("tick init\r\n");
@@ -201,7 +201,6 @@ int main() {
 
     SysTick->CTLR |= 1;
 
-
     printf("buzzer\r\n");
 
     printf("%d", get_tick());
@@ -209,6 +208,7 @@ int main() {
     display.printNumber(current_wattage);
 
     while (true) {
+        // update firing delay for smooth change
         if (firing_delay != target_firing_delay) {
             if (firing_delay < target_firing_delay) {
                 firing_delay += 2;
@@ -216,10 +216,14 @@ int main() {
                 firing_delay -= 2;
             }
         }
+
+        // refresh display
         for (int i = 0; i < 32; i++) {
             display.refresh();
         }
         display.allOff();
+
+        // turn off buzzer if too long
         buzzer_loop_count++;
         if (buzzer_loop_count > 25) {
             TIM2->CTLR1 &= (~1);
@@ -227,7 +231,8 @@ int main() {
             printf("Buzzer off %d\r\n", get_tick());
 #endif
         }
-        // enable touchkey
+
+        // read touchkey
         TKEY_CR |= 0x51000000;
         for (uint8_t i = 0; i < 6; i++) {
             switch_states[i] = touch[i].is_pressed();
@@ -239,17 +244,16 @@ int main() {
         printf("\r\n");
 #endif
         read_count++;
-        //disable touchkey
         TKEY_CR &= (~0x51000000);
 
-        //enable adc
+        // enable adc
         ADC1->CTLR2 |= 1;
+        // TODO: Read ADC Here
+        //        printf("TEMP: %d\r\n", analogRead(ADC1, TEMP_ADC_CHANNEL));
+        //        printf("VAD: %d\r\n", analogRead(ADC1, VAD_ADC_CHANNEL));
+        //        printf("NTC: %d\r\n", analogRead(ADC1, NTC_ADC_CHANNEL));
 
-        //TODO: Read ADC Here
-//        printf("TEMP: %d\r\n", analogRead(ADC1, TEMP_ADC_CHANNEL));
-//        printf("VAD: %d\r\n", analogRead(ADC1, VAD_ADC_CHANNEL));
-//        printf("NTC: %d\r\n", analogRead(ADC1, NTC_ADC_CHANNEL));
-
+        // check if switches changed
         if (memcmp(switch_states, previous_switch_states, 6) == 0) {
             continue;
         }
@@ -302,11 +306,12 @@ void adc_init() {
     ADC_Init(ADC1, &ADC_InitStructure);
     ADC_Cmd(ADC1, ENABLE);
     ADC_ResetCalibration(ADC1);
-    while (ADC_GetResetCalibrationStatus(ADC1));
+    while (ADC_GetResetCalibrationStatus(ADC1))
+        ;
     ADC_StartCalibration(ADC1);
-    while (ADC_GetCalibrationStatus(ADC1));
+    while (ADC_GetCalibrationStatus(ADC1))
+        ;
     adc_callibration_value = Get_CalibrationValue(ADC1);
- 
 }
 
 void tim2_init() {
@@ -407,14 +412,12 @@ int64_t get_tick() {
            (static_cast<uint64_t>(SysTick->CNTH3) << 56);
 }
 
-uint16_t convert_adc_3V3(int16_t val)
-{
+uint16_t convert_adc_3V3(int16_t val) {
     int32_t y;
     y = 6 * (val + adc_callibration_value) / 1000 - 12;
     if (val == 0 || val == 4095)
         return val;
-    else
-    {
+    else {
         if ((val + adc_callibration_value - y) < 0)
             return 0;
         if ((adc_callibration_value + val - y) > 4095 || val == 4095)
@@ -423,8 +426,7 @@ uint16_t convert_adc_3V3(int16_t val)
     }
 }
 
-uint16_t convert_adc(int16_t val)
-{
+uint16_t convert_adc(int16_t val) {
     if ((val + adc_callibration_value) < 0)
         return 0;
     if ((adc_callibration_value + val) > 4095 || val == 4095)
