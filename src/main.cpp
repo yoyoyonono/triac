@@ -75,11 +75,13 @@
 
 extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 extern "C" void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+extern "C" void RTC_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
 void exti_init();
 void tim2_init();
 void tim3_init();
 void adc_init();
+void rtc_init();
 
 uint16_t wattage_to_delay(uint16_t wattage);
 int64_t get_tick();
@@ -189,7 +191,11 @@ int main() {
     tim2_init();
     tim3_init();
 
-    printf("Buzzer init\r\n");
+    printf("Timers init\r\n");
+
+    rtc_init();
+
+    printf("RTC init\r\n");
 
     time_us = SystemCoreClock / 8000000;
     time_ms = (uint16_t)time_us * 1000;
@@ -369,6 +375,30 @@ void exti_init() {
     NVIC_Init(&NVIC_InitStructure);
 }
 
+void rtc_init() {
+    // configure rtc and enable interrupt for every second
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
+    PWR_BackupAccessCmd(ENABLE);
+    RCC_LSEConfig(RCC_LSE_ON);
+    while (RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET)
+        ;
+    RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
+    RCC_RTCCLKCmd(ENABLE);
+    RTC_WaitForSynchro();
+    RTC_WaitForLastTask();
+    RTC_ITConfig(RTC_IT_SEC, ENABLE);
+    RTC_WaitForLastTask();
+    RTC_SetPrescaler(32767);
+    RTC_WaitForLastTask();
+
+    NVIC_InitTypeDef NVIC_InitStructure = {0};
+    NVIC_InitStructure.NVIC_IRQChannel = RTC_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+}
+
 extern "C" void EXTI15_10_IRQHandler(void) {
     if (EXTI_GetITStatus(EXTI_Line15) != RESET) {
         // turn off all digits
@@ -394,6 +424,13 @@ extern "C" void TIM3_IRQHandler(void) {
 #endif
 
         TIM3->CTLR1 &= (~1);
+    }
+}
+
+extern "C" void RTC_IRQHandler(void) {
+    if (RTC_GetITStatus(RTC_IT_SEC) != RESET) {
+        RTC_ClearITPendingBit(RTC_IT_SEC);
+        printf("1 second\r\n");
     }
 }
 
