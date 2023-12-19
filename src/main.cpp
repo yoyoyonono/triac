@@ -103,6 +103,15 @@ bool switch_states[] = {false, false, false, false, false, false};
 bool previous_switch_states[] = {false, false, false, false, false, false};
 const bool all_false_switches[] = {false, false, false, false, false, false};
 
+enum power_states { OFF,
+                    ARMED,
+                    ON_WATTAGE,
+                    TIMER_SET,
+                    TIMER_ON,
+                    ERROR };
+
+power_states current_power_state = ON_WATTAGE;
+
 int16_t adc_callibration_value = 0;
 
 TouchButton touch[] = {
