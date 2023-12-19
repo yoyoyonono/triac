@@ -71,6 +71,9 @@
 #define TRIAC_PORT GPIOA
 #define TRIAC_PIN 12
 
+#define PERF_TEST_PORT GPIOA
+#define PERF_TEST_PIN 10
+
 #define FIRE_LENGTH_us 50
 
 extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
@@ -116,6 +119,8 @@ int16_t adc_callibration_value = 0;
 
 uint8_t timer_minutes = 1;
 uint8_t timer_seconds = 0;
+
+bool perf_test_state = false;
 
 TouchButton touch[] = {
     TouchButton(ADC_Channel_0, 1500),
@@ -167,6 +172,8 @@ int main() {
     pinMode(TEMP_PORT, TEMP_PIN, INPUT_ANALOG);
     pinMode(VAD_PORT, VAD_PIN, INPUT_ANALOG);
     pinMode(NTC_PORT, NTC_PIN, INPUT_ANALOG);
+
+    pinMode(PERF_TEST_PORT, PERF_TEST_PIN, OUTPUT);
 
     pinMode(SEG_DIG1_PORT, SEG_DIG1_PIN, OUTPUT);
     pinMode(SEG_DIG2_PORT, SEG_DIG2_PIN, OUTPUT);
@@ -226,6 +233,9 @@ int main() {
     display.printNumber(current_wattage);
 
     while (true) {
+        // toggle perf pin
+        perf_test_state = !perf_test_state;
+        digitalWrite(PERF_TEST_PORT, PERF_TEST_PIN, perf_test_state);
         // update firing delay for smooth change
         if (current_power_state == ON_WATTAGE) {
             if (firing_delay != target_firing_delay) {
