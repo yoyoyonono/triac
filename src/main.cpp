@@ -430,7 +430,9 @@ extern "C" void TIM3_IRQHandler(void) {
 extern "C" void RTC_IRQHandler(void) {
     if (RTC_GetITStatus(RTC_IT_SEC) != RESET) {
         RTC_ClearITPendingBit(RTC_IT_SEC);
-        printf("1 second\r\n");
+#ifdef LOG_INTERRUPT
+        printf("RTC_IRQHandler\r\n");
+#endif
     }
 }
 
