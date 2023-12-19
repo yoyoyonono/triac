@@ -86,7 +86,7 @@ int64_t get_tick();
 
 const uint16_t wattage_delay_lookup[] = {8640, 8064, 7616, 7216, 6864, 6544, 6224, 5920, 5632, 5344, 5056, 4768, 4480, 4192, 3904, 3600, 3264, 2928, 2560, 2128, 1616, 864};
 
-volatile uint16_t firing_delay = 8704;
+volatile uint16_t firing_delay = 10000;
 uint16_t target_firing_delay = 8640;
 uint16_t current_wattage = 200;
 uint8_t read_count = 0;
