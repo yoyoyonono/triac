@@ -437,12 +437,12 @@ extern "C" void EXTI15_10_IRQHandler(void) {
 extern "C" void TIM3_IRQHandler(void) {
     if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) {
         TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
-        digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
-        delayMicroseconds(FIRE_LENGTH_us);
-        digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
 #ifdef LOG_INTERRUPT
         printf("TIM3_IRQHandler\r\n");
 #endif
+        digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
+        delayMicroseconds(FIRE_LENGTH_us);
+        digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
 
         TIM3->CTLR1 &= (~1);
     }
