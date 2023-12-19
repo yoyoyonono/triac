@@ -114,6 +114,9 @@ power_states current_power_state = ON_WATTAGE;
 
 int16_t adc_callibration_value = 0;
 
+uint8_t timer_minutes = 1;
+uint8_t timer_seconds = 0;
+
 TouchButton touch[] = {
     TouchButton(ADC_Channel_0, 1500),
     TouchButton(ADC_Channel_1, 1500),
@@ -422,7 +425,7 @@ extern "C" void EXTI15_10_IRQHandler(void) {
 #ifdef LOG_INTERRUPT
         printf("EXTI15_10_IRQHandler\r\n");
 #endif
-        if (current_power_state == ON_WATTAGE) {
+        if (current_power_state == ON_WATTAGE || current_power_state == TIMER_ON) {
             display.allOff();
             TIM3->ATRLR = firing_delay;
             TIM3->CNT = 0;
@@ -451,6 +454,20 @@ extern "C" void RTC_IRQHandler(void) {
 #ifdef LOG_INTERRUPT
         printf("RTC_IRQHandler\r\n");
 #endif
+        if (current_power_state == TIMER_ON) {
+            if (timer_seconds == 0) {
+                if (timer_minutes == 0) {
+                    current_power_state = ON_WATTAGE;
+                    display.printNumber(current_wattage);
+                    return;
+                }
+                timer_minutes--;
+                timer_seconds = 59;
+            } else {
+                timer_seconds--;
+            }
+            display.printTime(timer_minutes, timer_seconds);
+        }
     }
 }
 
