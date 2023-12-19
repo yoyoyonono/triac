@@ -7,7 +7,7 @@
 #include "tkey.hpp"
 #include "util.hpp"
 
-// #define LOG_INTERRUPT
+//#define LOG_INTERRUPT
 // #define LOG_BUTTONVALS
 // #define LOG_SWITCHES
 // #define LOG_ALPHA
@@ -61,12 +61,14 @@
 #define TRIAC_PORT GPIOA
 #define TRIAC_PIN 12
 
-#define FIRE_LENGTH_us 600
+#define FIRE_LENGTH_us 50
 
 extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+extern "C" void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
 void exti_init();
-void timer_init();
+void tim2_init();
+void tim3_init();
 uint16_t wattage_to_delay(uint16_t wattage);
 int64_t get_tick();
 
@@ -154,7 +156,7 @@ int main() {
 
     exti_init();
 
-    digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
+    digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
 
     display.clear();
 
@@ -162,7 +164,8 @@ int main() {
 
     printf("Display init\r\n");
 
-    timer_init();
+    tim2_init();
+    tim3_init();
 
     printf("Buzzer init\r\n");
     
@@ -186,12 +189,12 @@ int main() {
     while (true) {
         if (firing_delay != target_firing_delay) {
             if (firing_delay < target_firing_delay) {
-                firing_delay += 8;
+                firing_delay += 2;
             } else {
-                firing_delay -= 8;
+                firing_delay -= 2;
             }
         }
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 32; i++) {
             display.refresh();
         }
         display.allOff();
@@ -253,7 +256,7 @@ int main() {
     return 0;
 }
 
-void timer_init() {
+void tim2_init() {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
@@ -266,12 +269,26 @@ void timer_init() {
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-    TIM2->PSC = SystemCoreClock / 1000000 - 1;
+    TIM2->PSC = (SystemCoreClock / 1000000) - 1;
     TIM2->ATRLR = 1000;
     TIM2->CNT = 0;
     TIM2->CHCTLR2 = 0b0000000001100000;
     TIM2->CCER = 0b0000000100000000;
     TIM2->CH3CVR = 500;
+}
+
+void tim3_init() {
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+
+    TIM3->PSC = (SystemCoreClock / 1000000) - 1;
+    TIM3->ATRLR = 1000;
+    TIM3->CNT = 0;
+    TIM3->CHCTLR2 = 0b0000000001100000;
+    TIM3->CCER = 0b0000000100000000;
+    TIM3->CH3CVR = 500;
+    TIM3->DMAINTENR |= 1;
+
+    NVIC_EnableIRQ(TIM3_IRQn);
 }
 
 void exti_init() {
@@ -301,11 +318,24 @@ extern "C" void EXTI15_10_IRQHandler(void) {
 #ifdef LOG_INTERRUPT
         printf("EXTI15_10_IRQHandler\r\n");
 #endif
-        delayMicroseconds(firing_delay);
-        digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
-        delayMicroseconds(FIRE_LENGTH_us);
-        digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
+        TIM3->ATRLR = firing_delay;
+        TIM3->CNT = 0;
+        TIM3->CTLR1 |= 1;
         EXTI_ClearITPendingBit(EXTI_Line15); /* Clear Flag */
+    }
+}
+
+extern "C" void TIM3_IRQHandler(void) {
+    if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) {
+        TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+        digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
+        delayMicroseconds(FIRE_LENGTH_us);
+        digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
+#ifdef LOG_INTERRUPT
+        printf("TIM3_IRQHandler\r\n");
+#endif
+
+        TIM3->CTLR1 &= (~1);
     }
 }
 
