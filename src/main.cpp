@@ -221,7 +221,7 @@ int main() {
         }
         display.allOff();
         buzzer_loop_count++;
-        if (buzzer_loop_count > 10) {
+        if (buzzer_loop_count > 25) {
             TIM2->CTLR1 &= (~1);
 #ifdef LOG_BUZZER
             printf("Buzzer off %d\r\n", get_tick());
