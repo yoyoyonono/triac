@@ -224,11 +224,13 @@ int main() {
 
     while (true) {
         // update firing delay for smooth change
-        if (firing_delay != target_firing_delay) {
-            if (firing_delay < target_firing_delay) {
-                firing_delay += 2;
-            } else {
-                firing_delay -= 2;
+        if (current_power_state == ON_WATTAGE) {
+            if (firing_delay != target_firing_delay) {
+                if (firing_delay < target_firing_delay) {
+                    firing_delay += 2;
+                } else {
+                    firing_delay -= 2;
+                }
             }
         }
 
@@ -288,20 +290,25 @@ int main() {
         printf("Buzzer %d\r\n", get_tick());
 #endif
         buzzer_loop_count = 0;
-        if (switch_states[0]) {
-            current_wattage -= 200;
-            if (current_wattage < 200) {
-                current_wattage = 200;
-            }
+
+        switch (current_power_state) {
+            case ON_WATTAGE:
+                if (switch_states[0]) {
+                    current_wattage -= 200;
+                    if (current_wattage < 200) {
+                        current_wattage = 200;
+                    }
+                }
+                if (switch_states[5]) {
+                    current_wattage += 200;
+                    if (current_wattage > 2000) {
+                        current_wattage = 2000;
+                    }
+                }
+                display.printNumber(current_wattage);
+                target_firing_delay = wattage_to_delay(current_wattage);
+                break;
         }
-        if (switch_states[5]) {
-            current_wattage += 200;
-            if (current_wattage > 2000) {
-                current_wattage = 2000;
-            }
-        }
-        display.printNumber(current_wattage);
-        target_firing_delay = wattage_to_delay(current_wattage);
 #ifdef LOG_SWITCHES
         printf("Wattage: %d\tDelay: %d\r\n", current_wattage, target_firing_delay);
 #endif
@@ -411,14 +418,16 @@ void rtc_init() {
 extern "C" void EXTI15_10_IRQHandler(void) {
     if (EXTI_GetITStatus(EXTI_Line15) != RESET) {
         // turn off all digits
-        display.allOff();
+        EXTI_ClearITPendingBit(EXTI_Line15); /* Clear Flag */
 #ifdef LOG_INTERRUPT
         printf("EXTI15_10_IRQHandler\r\n");
 #endif
-        TIM3->ATRLR = firing_delay;
-        TIM3->CNT = 0;
-        TIM3->CTLR1 |= 1;
-        EXTI_ClearITPendingBit(EXTI_Line15); /* Clear Flag */
+        if (current_power_state == ON_WATTAGE) {
+            display.allOff();
+            TIM3->ATRLR = firing_delay;
+            TIM3->CNT = 0;
+            TIM3->CTLR1 |= 1;
+        }
     }
 }
 
