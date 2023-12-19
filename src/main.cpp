@@ -227,6 +227,8 @@ int main() {
             printf("Buzzer off %d\r\n", get_tick());
 #endif
         }
+        // enable touchkey
+        TKEY_CR |= 0x51000000;
         for (uint8_t i = 0; i < 6; i++) {
             switch_states[i] = touch[i].is_pressed();
 #ifdef LOG_BUTTONVALS
@@ -237,6 +239,16 @@ int main() {
         printf("\r\n");
 #endif
         read_count++;
+        //disable touchkey
+        TKEY_CR &= (~0x51000000);
+
+        //enable adc
+        ADC1->CTLR2 |= 1;
+
+        //TODO: Read ADC Here
+//        printf("TEMP: %d\r\n", analogRead(ADC1, TEMP_ADC_CHANNEL));
+//        printf("VAD: %d\r\n", analogRead(ADC1, VAD_ADC_CHANNEL));
+//        printf("NTC: %d\r\n", analogRead(ADC1, NTC_ADC_CHANNEL));
 
         if (memcmp(switch_states, previous_switch_states, 6) == 0) {
             continue;
