@@ -26,6 +26,16 @@
 #define KEY6_PORT GPIOA
 #define KEY6_PIN 5
 
+#define TEMP_PORT GPIOC
+#define TEMP_PIN 0
+#define TEMP_ADC_CHANNEL ADC_Channel_10
+#define VAD_PORT GPIOC
+#define VAD_PIN 1
+#define VAD_ADC_CHANNEL ADC_Channel_11
+#define NTC_PORT GPIOC
+#define NTC_PIN 2
+#define NTC_ADC_CHANNEL ADC_Channel_12
+
 #define SEG_A_PORT GPIOC
 #define SEG_A_PIN 8
 #define SEG_B_PORT GPIOB
@@ -69,6 +79,8 @@ extern "C" void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fa
 void exti_init();
 void tim2_init();
 void tim3_init();
+void adc_init();
+
 uint16_t wattage_to_delay(uint16_t wattage);
 int64_t get_tick();
 
@@ -88,6 +100,8 @@ uint16_t buzzer_loop_count = 0;
 bool switch_states[] = {false, false, false, false, false, false};
 bool previous_switch_states[] = {false, false, false, false, false, false};
 const bool all_false_switches[] = {false, false, false, false, false, false};
+
+int16_t adc_callibration_value = 0;
 
 TouchButton touch[] = {
     TouchButton(ADC_Channel_0, 1500),
@@ -136,6 +150,10 @@ int main() {
     pinMode(KEY5_PORT, KEY5_PIN, INPUT_ANALOG);
     pinMode(KEY6_PORT, KEY6_PIN, INPUT_ANALOG);
 
+    pinMode(TEMP_PORT, TEMP_PIN, INPUT_ANALOG);
+    pinMode(VAD_PORT, VAD_PIN, INPUT_ANALOG);
+    pinMode(NTC_PORT, NTC_PIN, INPUT_ANALOG);
+
     pinMode(SEG_DIG1_PORT, SEG_DIG1_PIN, OUTPUT);
     pinMode(SEG_DIG2_PORT, SEG_DIG2_PIN, OUTPUT);
     pinMode(SEG_DIG3_PORT, SEG_DIG3_PIN, OUTPUT);
@@ -152,7 +170,11 @@ int main() {
 
     TKEY_CR |= 0x51000000;
 
+    adc_init();
+
     ADC_Cmd(ADC1, ENABLE);
+
+    printf("ADC init\r\n");
 
     exti_init();
 
@@ -256,6 +278,25 @@ int main() {
     return 0;
 }
 
+void adc_init() {
+    ADC_InitTypeDef ADC_InitStructure = {0};
+    ADC_DeInit(ADC1);
+    ADC_InitStructure.ADC_Mode = ADC_Mode_Independent;
+    ADC_InitStructure.ADC_ScanConvMode = DISABLE;
+    ADC_InitStructure.ADC_ContinuousConvMode = DISABLE;
+    ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
+    ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
+    ADC_InitStructure.ADC_NbrOfChannel = 1;
+    ADC_Init(ADC1, &ADC_InitStructure);
+    ADC_Cmd(ADC1, ENABLE);
+    ADC_ResetCalibration(ADC1);
+    while (ADC_GetResetCalibrationStatus(ADC1));
+    ADC_StartCalibration(ADC1);
+    while (ADC_GetCalibrationStatus(ADC1));
+    adc_callibration_value = Get_CalibrationValue(ADC1);
+ 
+}
+
 void tim2_init() {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
@@ -352,4 +393,29 @@ int64_t get_tick() {
            (static_cast<uint64_t>(SysTick->CNTH1) << 40) +
            (static_cast<uint64_t>(SysTick->CNTH2) << 48) +
            (static_cast<uint64_t>(SysTick->CNTH3) << 56);
+}
+
+uint16_t convert_adc_3V3(int16_t val)
+{
+    int32_t y;
+    y = 6 * (val + adc_callibration_value) / 1000 - 12;
+    if (val == 0 || val == 4095)
+        return val;
+    else
+    {
+        if ((val + adc_callibration_value - y) < 0)
+            return 0;
+        if ((adc_callibration_value + val - y) > 4095 || val == 4095)
+            return 4095;
+        return (val + adc_callibration_value);
+    }
+}
+
+uint16_t convert_adc(int16_t val)
+{
+    if ((val + adc_callibration_value) < 0)
+        return 0;
+    if ((adc_callibration_value + val) > 4095 || val == 4095)
+        return 4095;
+    return (val + adc_callibration_value);
 }
