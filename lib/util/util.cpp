@@ -47,6 +47,8 @@ uint8_t digitalRead(GPIO_TypeDef *GPIOx, uint8_t PIN) {
 uint16_t analogRead(ADC_TypeDef *ADCx, uint8_t CHANNEL) {
     ADC_RegularChannelConfig(ADCx, CHANNEL, 1, ADC_SampleTime_239Cycles5);
     ADC_SoftwareStartConvCmd(ADCx, ENABLE);
-    while (ADC_GetFlagStatus(ADCx, ADC_FLAG_EOC) == RESET);
+
+    while (!ADC_GetFlagStatus(ADCx, ADC_FLAG_EOC));
+
     return ADC_GetConversionValue(ADCx);
 }
