@@ -221,7 +221,7 @@ void Display::printTemperature(int16_t temperature) {
 }
 
 void Display::printTime(uint8_t hour, uint8_t min) {
-    printNumber(hour * 100 + min);
+    printNumber(hour * 100 + min, true);
     digits[1] |= std::byte(0b10000000);  // colon
 }
 
