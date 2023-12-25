@@ -76,6 +76,14 @@
 
 #define FIRE_LENGTH_us 50
 
+// peripheral usage
+// ADC + TKEY: touchkeys
+// ADC: NTC, VAD and temp
+// RTC: coundown clock
+// TIM2: buzzer PWM
+// TIM3: triac delay
+// USART1: debug
+
 extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 extern "C" void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 extern "C" void RTC_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
