@@ -82,6 +82,7 @@
 // RTC: coundown clock
 // TIM2: buzzer PWM
 // TIM3: triac delay
+// TIM4: display refresh
 // USART1: debug
 
 extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
