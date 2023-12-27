@@ -92,6 +92,7 @@ extern "C" void RTC_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fas
 void exti_init();
 void tim2_init();
 void tim3_init();
+void tim4_init();
 void adc_init();
 void rtc_init();
 
@@ -391,6 +392,20 @@ void tim3_init() {
     TIM3->DMAINTENR |= 1;
 
     NVIC_EnableIRQ(TIM3_IRQn);
+}
+
+void tim4_init() {
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
+
+    TIM3->PSC = (SystemCoreClock / 1000000) - 1;
+    TIM3->ATRLR = 1000;
+    TIM3->CNT = 0;
+    TIM3->CHCTLR2 = 0b0000000001100000;
+    TIM3->CCER = 0b0000000100000000;
+    TIM3->CH3CVR = 500;
+    TIM3->DMAINTENR |= 1;
+
+    NVIC_EnableIRQ(TIM4_IRQn);
 }
 
 void exti_init() {
