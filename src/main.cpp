@@ -258,12 +258,6 @@ int main() {
             }
         }
 
-        // refresh display
-        for (int i = 0; i < 32; i++) {
-            display.refresh();
-        }
-        display.allOff();
-
         // turn off buzzer if too long
         buzzer_loop_count++;
         if (buzzer_loop_count > 25) {
