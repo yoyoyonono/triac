@@ -87,6 +87,7 @@
 
 extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 extern "C" void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+extern "C" void TIM4_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 extern "C" void RTC_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
 void exti_init();
@@ -479,6 +480,16 @@ extern "C" void TIM3_IRQHandler(void) {
         digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
 
         TIM3->CTLR1 &= (~1);
+    }
+}
+
+extern "C" void TIM4_IRQHandler(void) {
+    if (TIM_GetITStatus(TIM4, TIM_IT_Update) != RESET) {
+        TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
+#ifdef LOG_INTERRUPT
+        printf("TIM4_IRQHandler\r\n");
+#endif
+        display.refresh();
     }
 }
 
