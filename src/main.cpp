@@ -327,6 +327,8 @@ int main() {
                 display.printNumber(current_wattage);
                 target_firing_delay = wattage_to_delay(current_wattage);
                 break;
+            default:
+                break;
         }
 #ifdef LOG_SWITCHES
         printf("Wattage: %d\tDelay: %d\r\n", current_wattage, target_firing_delay);
