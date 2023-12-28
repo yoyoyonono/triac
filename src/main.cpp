@@ -70,8 +70,8 @@
 #define TRIAC_PORT GPIOA
 #define TRIAC_PIN 12
 
-#define PERF_TEST_PORT GPIOA
-#define PERF_TEST_PIN 10
+#define PERF_TEST_PORT GPIOB
+#define PERF_TEST_PIN 8
 
 #define FIRE_LENGTH_us 50
 
