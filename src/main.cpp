@@ -82,15 +82,18 @@
 // RTC: coundown clock
 // TIM2: buzzer PWM
 // TIM3: triac delay
+// TIM4: display refresh
 // USART1: debug
 
 extern "C" void EXTI15_10_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 extern "C" void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+extern "C" void TIM4_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 extern "C" void RTC_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
 void exti_init();
 void tim2_init();
 void tim3_init();
+void tim4_init();
 void adc_init();
 void rtc_init();
 
@@ -217,6 +220,7 @@ int main() {
 
     tim2_init();
     tim3_init();
+    tim4_init();
 
     printf("Timers init\r\n");
 
@@ -254,12 +258,6 @@ int main() {
                 }
             }
         }
-
-        // refresh display
-        for (int i = 0; i < 32; i++) {
-            display.refresh();
-        }
-        display.allOff();
 
         // turn off buzzer if too long
         buzzer_loop_count++;
@@ -392,6 +390,21 @@ void tim3_init() {
     NVIC_EnableIRQ(TIM3_IRQn);
 }
 
+void tim4_init() {
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
+
+    TIM4->PSC = (SystemCoreClock / 1000000) - 1;
+    TIM4->ATRLR = 1000;
+    TIM4->CNT = 0;
+    TIM4->CHCTLR2 = 0b0000000001100000;
+    TIM4->CCER = 0b0000000100000000;
+    TIM4->CH3CVR = 500;
+    TIM4->DMAINTENR |= 1;
+    TIM4->CTLR1 |= 1;
+
+    NVIC_EnableIRQ(TIM4_IRQn);
+}
+
 void exti_init() {
     GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
 
@@ -463,6 +476,16 @@ extern "C" void TIM3_IRQHandler(void) {
         digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
 
         TIM3->CTLR1 &= (~1);
+    }
+}
+
+extern "C" void TIM4_IRQHandler(void) {
+    if (TIM_GetITStatus(TIM4, TIM_IT_Update) != RESET) {
+        TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
+#ifdef LOG_INTERRUPT
+        printf("TIM4_IRQHandler\r\n");
+#endif
+        display.refresh();
     }
 }
 
