@@ -2,7 +2,6 @@
 #include <debug.h>
 #include <string.h>
 
-#include "ch32v10x_it.h"
 #include "display.hpp"
 #include "tkey.hpp"
 #include "util.hpp"
