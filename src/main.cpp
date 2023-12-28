@@ -220,6 +220,7 @@ int main() {
 
     tim2_init();
     tim3_init();
+    tim4_init();
 
     printf("Timers init\r\n");
 
@@ -392,13 +393,14 @@ void tim3_init() {
 void tim4_init() {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
 
-    TIM3->PSC = (SystemCoreClock / 1000000) - 1;
-    TIM3->ATRLR = 1000;
-    TIM3->CNT = 0;
-    TIM3->CHCTLR2 = 0b0000000001100000;
-    TIM3->CCER = 0b0000000100000000;
-    TIM3->CH3CVR = 500;
-    TIM3->DMAINTENR |= 1;
+    TIM4->PSC = (SystemCoreClock / 1000000) - 1;
+    TIM4->ATRLR = 1000;
+    TIM4->CNT = 0;
+    TIM4->CHCTLR2 = 0b0000000001100000;
+    TIM4->CCER = 0b0000000100000000;
+    TIM4->CH3CVR = 500;
+    TIM4->DMAINTENR |= 1;
+    TIM4->CTLR1 |= 1;
 
     NVIC_EnableIRQ(TIM4_IRQn);
 }
