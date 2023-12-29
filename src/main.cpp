@@ -396,7 +396,7 @@ void tim4_init() {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
 
     TIM4->PSC = (SystemCoreClock / 1000000) - 1;
-    TIM4->ATRLR = 1000;
+    TIM4->ATRLR = 2000;
     TIM4->CNT = 0;
     TIM4->CHCTLR2 = 0b0000000001100000;
     TIM4->CCER = 0b0000000100000000;
