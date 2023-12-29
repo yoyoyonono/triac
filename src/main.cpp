@@ -133,12 +133,12 @@ uint8_t timer_seconds = 0;
 bool perf_test_state = false;
 
 TouchButton touch[] = {
-    TouchButton(ADC_Channel_0, 1500),
-    TouchButton(ADC_Channel_1, 1500),
-    TouchButton(ADC_Channel_2, 1500),
-    TouchButton(ADC_Channel_3, 1500),
-    TouchButton(ADC_Channel_4, 1500),
-    TouchButton(ADC_Channel_5, 1500)};
+    TouchButton(ADC_Channel_0, 1800),
+    TouchButton(ADC_Channel_1, 1800),
+    TouchButton(ADC_Channel_2, 1800),
+    TouchButton(ADC_Channel_3, 1800),
+    TouchButton(ADC_Channel_4, 1800),
+    TouchButton(ADC_Channel_5, 1800)};
 
 Display display = Display(SEG_A_PORT, SEG_A_PIN,
                           SEG_B_PORT, SEG_B_PIN,
