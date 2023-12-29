@@ -103,6 +103,7 @@ const uint16_t wattage_delay_lookup[] = {8640, 8064, 7616, 7216, 6864, 6544, 622
 
 volatile uint16_t firing_delay = 10000;
 uint16_t target_firing_delay = 8640;
+bool first_fire = false;
 uint16_t current_wattage = 200;
 uint8_t read_count = 0;
 uint64_t last_buzzer = 0;
@@ -472,11 +473,15 @@ extern "C" void TIM3_IRQHandler(void) {
 #ifdef LOG_INTERRUPT
         printf("TIM3_IRQHandler\r\n");
 #endif
-        digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
-        delayMicroseconds(FIRE_LENGTH_us);
-        digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
-
-        TIM3->CTLR1 &= (~1);
+        if (first_fire) {
+            first_fire = false;
+            digitalWrite(TRIAC_PORT, TRIAC_PIN, LOW);
+            TIM3->ATRLR = FIRE_LENGTH_us;
+        } else {
+            first_fire = true;
+            digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
+            TIM3->CTLR1 &= (~1);
+        }
     }
 }
 
