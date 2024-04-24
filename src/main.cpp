@@ -265,7 +265,7 @@ int main() {
 
         // turn off buzzer if too long
         buzzer_loop_count++;
-        if (buzzer_loop_count > 5) {
+        if (buzzer_loop_count > 50) {
             TIM2->CTLR1 &= (~1);
 #ifdef LOG_BUZZER
             printf("Buzzer off %d\r\n", get_tick());
