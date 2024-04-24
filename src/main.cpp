@@ -134,12 +134,13 @@ uint8_t timer_seconds = 0;
 bool perf_test_state = false;
 
 TouchButton touch[] = {
-    TouchButton(ADC_Channel_0, 1800),
-    TouchButton(ADC_Channel_1, 1800),
-    TouchButton(ADC_Channel_2, 1800),
-    TouchButton(ADC_Channel_3, 1800),
-    TouchButton(ADC_Channel_4, 1800),
-    TouchButton(ADC_Channel_5, 1800)};
+    TouchButton(ADC_Channel_2, 14000),
+    TouchButton(ADC_Channel_1, 14000),
+    TouchButton(ADC_Channel_0, 14000),
+    TouchButton(ADC_Channel_5, 14000),
+    TouchButton(ADC_Channel_4, 14000),
+    TouchButton(ADC_Channel_3, 14000),
+};
 
 Display display = Display(SEG_A_PORT, SEG_A_PIN,
                           SEG_B_PORT, SEG_B_PIN,
@@ -261,11 +262,13 @@ int main() {
 
         // turn off buzzer if too long
         buzzer_loop_count++;
-        if (buzzer_loop_count > 25) {
+        if (buzzer_loop_count > 5) {
             TIM2->CTLR1 &= (~1);
 #ifdef LOG_BUZZER
             printf("Buzzer off %d\r\n", get_tick());
 #endif
+            pinMode(BUZZER_PORT, BUZZER_PIN, OUTPUT);
+            digitalWrite(BUZZER_PORT, BUZZER_PIN, LOW);
         }
 
         // read touchkey
@@ -273,7 +276,7 @@ int main() {
         for (uint8_t i = 0; i < 6; i++) {
             switch_states[i] = touch[i].is_pressed();
 #ifdef LOG_BUTTONVALS
-            printf("%d ", touch[i].read());
+            printf("%u\t", touch[i].read());
 #endif
         }
 #ifdef LOG_BUTTONVALS
@@ -304,6 +307,7 @@ int main() {
         if (memcmp(switch_states, all_false_switches, 6) == 0) {
             continue;
         }
+        pinMode(BUZZER_PORT, BUZZER_PIN, GPIO_Mode_AF_PP);
         TIM2->CTLR1 |= 1;
 #ifdef LOG_BUZZER
         printf("Buzzer %d\r\n", get_tick());
@@ -318,7 +322,7 @@ int main() {
                         current_wattage = 200;
                     }
                 }
-                if (switch_states[5]) {
+                if (switch_states[1]) {
                     current_wattage += 200;
                     if (current_wattage > 2000) {
                         current_wattage = 2000;
