@@ -257,6 +257,9 @@ int main() {
                 } else {
                     firing_delay -= 2;
                 }
+#ifdef LOG_ALPHA
+                printf("Firing delay: %d\r\n", firing_delay);
+#endif
             }
         }
 
