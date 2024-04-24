@@ -20,5 +20,5 @@ uint32_t TouchButton::read() {
 }
 
 bool TouchButton::is_pressed() {
-    return read() > threshold;
+    return read() < threshold;
 }
