@@ -375,7 +375,7 @@ void tim2_init() {
     GPIO_Init(GPIOB, &GPIO_InitStructure);
 
     TIM2->PSC = (SystemCoreClock / 1000000) - 1;
-    TIM2->ATRLR = 1000;
+    TIM2->ATRLR = 2000;
     TIM2->CNT = 0;
     TIM2->CHCTLR2 = 0b0000000001100000;
     TIM2->CCER = 0b0000000100000000;
