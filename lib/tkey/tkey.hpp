@@ -9,8 +9,8 @@
 class TouchButton {
     public:
         uint8_t channel;
-        uint16_t threshold;
-        TouchButton(uint8_t channel, uint16_t threshold);
-        uint16_t read();
+        uint32_t threshold;
+        TouchButton(uint8_t channel, uint32_t threshold);
+        uint32_t read();
         bool is_pressed();
 };
