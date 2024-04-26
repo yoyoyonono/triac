@@ -347,8 +347,7 @@ int main() {
                 target_firing_delay = wattage_to_delay(current_wattage);
 
                 if (switch_states[5]) {
-                    current_power_state = TIMER_SET;
-                    display.printTime(timer_minutes, timer_seconds);
+                    change_power_state(TIMER_SET);
                 }
                 break;
             case TIMER_SET:
@@ -365,15 +364,13 @@ int main() {
                     }
                 }
                 if (switch_states[5]) {
-                    current_power_state = TIMER_ON;
-                    display.printTime(timer_minutes, timer_seconds);
+                    change_power_state(TIMER_ON);
                 }
                 display.printTime(timer_minutes, timer_seconds);
                 break;
             case TIMER_ON:
                 if (switch_states[5]) {
-                    current_power_state = ON_WATTAGE;
-                    display.printNumber(current_wattage);
+                    change_power_state(ON_WATTAGE);
                 }
                 break;
             default:
@@ -603,4 +600,30 @@ uint16_t convert_adc(int16_t val) {
     if ((adc_callibration_value + val) > 4095 || val == 4095)
         return 4095;
     return (val + adc_callibration_value);
+}
+
+void change_power_state(power_states state) {
+    current_power_state = state;
+    switch (state) {
+        case OFF:
+            display.print("----");
+            break;
+        case ARMED:
+            display.print("  ON");
+            break;
+        case ON_WATTAGE:
+            display.printNumber(current_wattage);
+            break;
+        case TIMER_SET:
+            display.printTime(timer_minutes, timer_seconds);
+            break;
+        case TIMER_ON:
+            display.printTime(timer_minutes, timer_seconds);
+            break;
+        case ERROR:
+            display.print("ERR ");
+            break;
+        default:
+            break;
+    }
 }
