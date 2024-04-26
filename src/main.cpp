@@ -95,6 +95,7 @@ void tim3_init();
 void tim4_init();
 void adc_init();
 void rtc_init();
+void change_power_state(power_states state);
 
 uint16_t wattage_to_delay(uint16_t wattage);
 int64_t get_tick();
