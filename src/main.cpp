@@ -337,8 +337,39 @@ int main() {
                         current_wattage = 2000;
                     }
                 }
+
                 display.printNumber(current_wattage);
                 target_firing_delay = wattage_to_delay(current_wattage);
+
+                if (switch_states[5]) {
+                    current_power_state = TIMER_SET;
+                    display.printTime(timer_minutes, timer_seconds);
+                }
+                break;
+            case TIMER_SET:
+                if (switch_states[0]) {
+                    timer_minutes--;
+                    if (timer_minutes > 99) {
+                        timer_minutes = 0;
+                    }
+                }
+                if (switch_states[1]) {
+                    timer_minutes++;
+                    if (timer_minutes > 99) {
+                        timer_minutes = 99;
+                    }
+                }
+                if (switch_states[5]) {
+                    current_power_state = TIMER_ON;
+                    display.printTime(timer_minutes, timer_seconds);
+                }
+                display.printTime(timer_minutes, timer_seconds);
+                break;
+            case TIMER_ON:
+                if (switch_states[5]) {
+                    current_power_state = ON_WATTAGE;
+                    display.printNumber(current_wattage);
+                }
                 break;
             default:
                 break;
