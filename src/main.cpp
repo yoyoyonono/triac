@@ -135,6 +135,8 @@ uint8_t timer_seconds = 0;
 
 bool perf_test_state = false;
 
+bool is_locked = false;
+
 TouchButton touch[] = {
     TouchButton(ADC_Channel_2, 2900),
     TouchButton(ADC_Channel_1, 2900),
@@ -329,6 +331,20 @@ int main() {
         printf("Buzzer %d\r\n", get_tick());
 #endif
         buzzer_loop_count = 50;
+
+        if (switch_states[0]) {
+            if (is_locked) {
+                is_locked = false;
+                change_power_state(current_power_state);
+            } else {
+                is_locked = true;
+                display.print("LOCK");
+            }
+        }
+
+        if (is_locked) {
+            continue;
+        }
 
         switch (current_power_state) {
             case OFF: {
