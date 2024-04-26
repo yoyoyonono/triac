@@ -73,7 +73,7 @@
 #define PERF_TEST_PORT GPIOB
 #define PERF_TEST_PIN 8
 
-#define FIRE_LENGTH_us 50
+#define FIRE_LENGTH_us 500
 
 // peripheral usage
 // ADC + TKEY: touchkeys
