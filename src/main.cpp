@@ -249,7 +249,7 @@ int main() {
 
     printf("%d", get_tick());
 
-    display.printNumber(current_wattage);
+    change_power_state(OFF);
 
     while (true) {
         // toggle perf pin
@@ -576,8 +576,7 @@ extern "C" void RTC_IRQHandler(void) {
         if (current_power_state == TIMER_ON) {
             if (timer_seconds == 0) {
                 if (timer_minutes == 0) {
-                    current_power_state = ON_WATTAGE;
-                    display.printNumber(current_wattage);
+                    change_power_state(OFF);
                     buzzer_loop_count = 200;
                     return;
                 }
