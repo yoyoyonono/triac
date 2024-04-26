@@ -331,14 +331,29 @@ int main() {
         buzzer_loop_count = 50;
 
         switch (current_power_state) {
+            case OFF: {
+                if (switch_states[5]) {
+                    change_power_state(ARMED);
+                }
+                break;
+            }
+            case ARMED: {
+                if (switch_states[5]) {
+                    change_power_state(OFF);
+                }
+                if (switch_states[4]) {
+                    change_power_state(ON_WATTAGE);
+                }
+                break;
+            }
             case ON_WATTAGE:
-                if (switch_states[0]) {
+                if (switch_states[2]) {
                     current_wattage -= 200;
                     if (current_wattage < 200) {
                         current_wattage = 200;
                     }
                 }
-                if (switch_states[1]) {
+                if (switch_states[3]) {
                     current_wattage += 200;
                     if (current_wattage > 2000) {
                         current_wattage = 2000;
@@ -348,31 +363,40 @@ int main() {
                 display.printNumber(current_wattage);
                 target_firing_delay = wattage_to_delay(current_wattage);
 
-                if (switch_states[5]) {
+                if (switch_states[1]) {
                     change_power_state(TIMER_SET);
+                }
+                if (switch_states[4]) {
+                    change_power_state(ARMED);
+                }
+                if (switch_states[5]) {
+                    change_power_state(OFF);
                 }
                 break;
             case TIMER_SET:
-                if (switch_states[0]) {
+                if (switch_states[2]) {
                     timer_minutes--;
                     if (timer_minutes > 99) {
                         timer_minutes = 0;
                     }
                 }
-                if (switch_states[1]) {
+                if (switch_states[3]) {
                     timer_minutes++;
                     if (timer_minutes > 99) {
                         timer_minutes = 99;
                     }
                 }
-                if (switch_states[5]) {
+                if (switch_states[1]) {
                     change_power_state(TIMER_ON);
                 }
                 display.printTime(timer_minutes, timer_seconds);
                 break;
             case TIMER_ON:
-                if (switch_states[5]) {
+                if (switch_states[4]) {
                     change_power_state(ON_WATTAGE);
+                }
+                if (switch_states[5]) {
+                    change_power_state(OFF);
                 }
                 break;
             default:
