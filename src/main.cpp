@@ -382,13 +382,13 @@ void tim2_init() {
     TIM2->CNT = 0;
     TIM2->CHCTLR2 = 0b0000000001100000;
     TIM2->CCER = 0b0000000100000000;
-    TIM2->CH3CVR = 500;
+    TIM2->CH3CVR = 1000;
 }
 
 void tim3_init() {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
-    TIM3->PSC = (SystemCoreClock / 1000000) - 1;
+    TIM3->PSC = (SystemCoreClock / 500000) - 1;
     TIM3->ATRLR = 1000;
     TIM3->CNT = 0;
     TIM3->CHCTLR2 = 0b0000000001100000;
