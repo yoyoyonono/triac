@@ -95,7 +95,6 @@ void tim3_init();
 void tim4_init();
 void adc_init();
 void rtc_init();
-void change_power_state(power_states state);
 
 uint16_t wattage_to_delay(uint16_t wattage);
 int64_t get_tick();
@@ -125,7 +124,9 @@ enum power_states { OFF,
                     TIMER_ON,
                     ERROR };
 
-power_states current_power_state = ON_WATTAGE;
+void change_power_state(power_states state);
+
+power_states current_power_state = OFF;
 
 int16_t adc_callibration_value = 0;
 
