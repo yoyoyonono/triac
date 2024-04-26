@@ -268,14 +268,14 @@ int main() {
         }
 
         // turn off buzzer if too long
-        buzzer_loop_count++;
-        if (buzzer_loop_count > 50) {
-            TIM2->CTLR1 &= (~1);
+        if (buzzer_loop_count == 0) {
+            TIM2->ATRLR = 100;
+            TIM2->CH3CVR = 80;
 #ifdef LOG_BUZZER
             printf("Buzzer off %d\r\n", get_tick());
 #endif
-            pinMode(BUZZER_PORT, BUZZER_PIN, OUTPUT);
-            digitalWrite(BUZZER_PORT, BUZZER_PIN, LOW);
+        } else {
+            buzzer_loop_count--;
         }
 
         // read touchkey
@@ -315,11 +315,13 @@ int main() {
             continue;
         }
         pinMode(BUZZER_PORT, BUZZER_PIN, GPIO_Mode_AF_PP);
-        TIM2->CTLR1 |= 1;
+        TIM2->ATRLR = 2000;
+        TIM2->CH3CVR = 1000;
+
 #ifdef LOG_BUZZER
         printf("Buzzer %d\r\n", get_tick());
 #endif
-        buzzer_loop_count = 0;
+        buzzer_loop_count = 50;
 
         switch (current_power_state) {
             case ON_WATTAGE:
