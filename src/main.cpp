@@ -275,6 +275,8 @@ int main() {
             printf("Buzzer off %d\r\n", get_tick());
 #endif
         } else {
+            TIM2->ATRLR = 2000;
+            TIM2->CH3CVR = 1000;
             buzzer_loop_count--;
         }
 
@@ -314,9 +316,12 @@ int main() {
         if (memcmp(switch_states, all_false_switches, 6) == 0) {
             continue;
         }
+
+        if (buzzer_loop_count > 0) {
+            continue;
+        }
+
         pinMode(BUZZER_PORT, BUZZER_PIN, GPIO_Mode_AF_PP);
-        TIM2->ATRLR = 2000;
-        TIM2->CH3CVR = 1000;
 
 #ifdef LOG_BUZZER
         printf("Buzzer %d\r\n", get_tick());
@@ -550,6 +555,7 @@ extern "C" void RTC_IRQHandler(void) {
                 if (timer_minutes == 0) {
                     current_power_state = ON_WATTAGE;
                     display.printNumber(current_wattage);
+                    buzzer_loop_count = 200;
                     return;
                 }
                 timer_minutes--;
