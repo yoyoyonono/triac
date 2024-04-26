@@ -224,6 +224,8 @@ int main() {
     tim4_init();
 
     printf("Timers init\r\n");
+    
+    TIM2->CTLR1 |= 0;
 
     rtc_init();
 
@@ -236,6 +238,8 @@ int main() {
     printf("us: %d\r\n", time_us);
 
     // buzz for one second
+    
+    TIM2->CTLR1 |= 1;
 
     SysTick->CTLR |= 1;
 
@@ -438,16 +442,16 @@ void rtc_init() {
     // configure rtc and enable interrupt for every second
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
     PWR_BackupAccessCmd(ENABLE);
-    RCC_LSEConfig(RCC_LSE_ON);
-    while (RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET)
+    RCC_LSICmd(ENABLE);
+    while (RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET)
         ;
-    RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
+    RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
     RCC_RTCCLKCmd(ENABLE);
     RTC_WaitForSynchro();
     RTC_WaitForLastTask();
     RTC_ITConfig(RTC_IT_SEC, ENABLE);
     RTC_WaitForLastTask();
-    RTC_SetPrescaler(32767);
+    RTC_SetPrescaler(40000);
     RTC_WaitForLastTask();
 
     NVIC_InitTypeDef NVIC_InitStructure = {0};
