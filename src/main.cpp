@@ -138,12 +138,12 @@ bool perf_test_state = false;
 bool is_locked = false;
 
 TouchButton touch[] = {
-    TouchButton(ADC_Channel_2, 2900),
-    TouchButton(ADC_Channel_1, 2900),
-    TouchButton(ADC_Channel_0, 3500),
-    TouchButton(ADC_Channel_5, 2500),
-    TouchButton(ADC_Channel_4, 2100),
-    TouchButton(ADC_Channel_3, 2700),
+    TouchButton(ADC_Channel_2, 3100),
+    TouchButton(ADC_Channel_1, 3200),
+    TouchButton(ADC_Channel_0, 3700),
+    TouchButton(ADC_Channel_5, 2670),
+    TouchButton(ADC_Channel_4, 2700),
+    TouchButton(ADC_Channel_3, 2750),
 };
 
 Display display = Display(SEG_A_PORT, SEG_A_PIN,
