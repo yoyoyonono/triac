@@ -138,12 +138,12 @@ bool perf_test_state = false;
 bool is_locked = false;
 
 TouchButton touch[] = {
-    TouchButton(ADC_Channel_2, 3100),
-    TouchButton(ADC_Channel_1, 3200),
-    TouchButton(ADC_Channel_0, 3700),
-    TouchButton(ADC_Channel_5, 2670),
-    TouchButton(ADC_Channel_4, 2700),
-    TouchButton(ADC_Channel_3, 2750),
+    TouchButton(ADC_Channel_2),
+    TouchButton(ADC_Channel_1),
+    TouchButton(ADC_Channel_0),
+    TouchButton(ADC_Channel_5),
+    TouchButton(ADC_Channel_4),
+    TouchButton(ADC_Channel_3),
 };
 
 Display display = Display(SEG_A_PORT, SEG_A_PIN,
@@ -289,7 +289,7 @@ int main() {
         for (uint8_t i = 0; i < 6; i++) {
             switch_states[i] = touch[i].is_pressed();
 #ifdef LOG_BUTTONVALS
-            printf("%u\t", touch[i].read());
+            printf("%u:%u\t", touch[i].normal_value_average, touch[i].read());
 #endif
         }
 #ifdef LOG_BUTTONVALS

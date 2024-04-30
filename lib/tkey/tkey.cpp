@@ -2,9 +2,10 @@
 #include <debug.h>
 #include "tkey.hpp"
 #include "stdlib.h"
+#include "util.hpp"
 
-TouchButton::TouchButton(uint8_t channel, uint32_t threshold) : channel(channel), threshold(threshold) {
-
+TouchButton::TouchButton(uint8_t channel) : channel(channel) {
+    last_read = false;
 }
 
 uint32_t TouchButton::read() {
@@ -20,5 +21,36 @@ uint32_t TouchButton::read() {
 }
 
 bool TouchButton::is_pressed() {
-    return read() < threshold;
+    uint32_t new_value = read();
+
+
+    // calculate average
+    uint32_t average = 0;
+    for (uint8_t i = 0; i < 100; i++) {
+        average += history[i];
+    }
+    average /= 100;
+
+    if (abs((int16_t)average - (int16_t)new_value) > 50) {
+        delay(20);
+        return true;
+    } else {
+        // rotate history
+        for (uint8_t i = 0; i < 99; i++) {
+            history[i] = history[i + 1];
+        }
+        history[99] = new_value;
+        return false;
+    }
+}
+
+uint32_t TouchButton::callibrate() {
+    for (uint8_t i = 0; i < 100; i++) {
+        normal_value_average += read();
+    }
+    normal_value_average /= 100;
+    for (uint8_t i = 0; i < 100; i++) {
+        history[i] = normal_value_average;
+    }
+    return normal_value_average;
 }
