@@ -11,6 +11,7 @@
 // #define LOG_SWITCHES
 // #define LOG_ALPHA
 // #define LOG_BUZZER
+// #define ENABLE_BUZZER
 
 #define KEY1_PORT GPIOA
 #define KEY1_PIN 0
