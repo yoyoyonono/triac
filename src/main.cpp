@@ -191,37 +191,13 @@ int main() {
 
     pinMode(PERF_TEST_PORT, PERF_TEST_PIN, OUTPUT);
 
-    pinMode(SEG_DIG1_PORT, SEG_DIG1_PIN, OUTPUT);
-    pinMode(SEG_DIG2_PORT, SEG_DIG2_PIN, OUTPUT);
-    pinMode(SEG_DIG3_PORT, SEG_DIG3_PIN, OUTPUT);
-    pinMode(SEG_DIG4_PORT, SEG_DIG4_PIN, OUTPUT);
-    pinMode(SEG_A_PORT, SEG_A_PIN, OUTPUT);
-
-    digitalWrite(SEG_A_PORT, SEG_A_PIN, HIGH);
-    digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, LOW);
-    digitalWrite(SEG_DIG2_PORT, SEG_DIG2_PIN, LOW);
-    digitalWrite(SEG_DIG3_PORT, SEG_DIG3_PIN, HIGH);
-    digitalWrite(SEG_DIG4_PORT, SEG_DIG4_PIN, HIGH);
-
-    printf("Keys init\r\n");
-
-    TKEY_CR |= 0x51000000;
-
-    adc_init();
-
-    ADC_Cmd(ADC1, ENABLE);
-
-    printf("ADC init\r\n");
+    printf("Display init\r\n");
 
     exti_init();
 
     digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
 
-    display.clear();
-
-    display.printNumber(current_wattage);
-
-    printf("Display init\r\n");
+    display.setAll();
 
     tim2_init();
     tim3_init();
@@ -241,15 +217,30 @@ int main() {
     printf("ms: %d\r\n", time_ms);
     printf("us: %d\r\n", time_us);
 
-    // buzz for one second
-    
     TIM2->CTLR1 |= 1;
 
     SysTick->CTLR |= 1;
 
+    delay(1000);
+
     printf("buzzer\r\n");
 
     printf("%d", get_tick());
+    
+    adc_init();
+
+    ADC_Cmd(ADC1, ENABLE);
+
+    printf("ADC init\r\n");
+    
+    TKEY_CR |= 0x51000000;
+
+    for (TouchButton &button : touch) {
+        printf("%d\r\n", button.callibrate());
+    }
+
+    printf("Keys init\r\n");
+
 
     change_power_state(OFF);
 
@@ -279,9 +270,11 @@ int main() {
             printf("Buzzer off %d\r\n", get_tick());
 #endif
         } else {
+#ifdef ENABLE_BUZZER
             TIM2->ATRLR = 2000;
             TIM2->CH3CVR = 1000;
             buzzer_loop_count--;
+#endif
         }
 
         // read touchkey
@@ -418,9 +411,6 @@ int main() {
             default:
                 break;
         }
-#ifdef LOG_SWITCHES
-        printf("Wattage: %d\tDelay: %d\r\n", current_wattage, target_firing_delay);
-#endif
     }
     return 0;
 }
