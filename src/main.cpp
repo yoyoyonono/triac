@@ -26,6 +26,15 @@
 #define KEY6_PORT GPIOA
 #define KEY6_PIN 5
 
+#define KEY2_LED_PORT GPIOC
+#define KEY2_LED_PIN 14
+#define KEY3_LED_PORT GPIOC
+#define KEY3_LED_PIN 15
+#define KEY4_LED_PORT GPIOB
+#define KEY4_LED_PIN 13
+#define KEY5_LED_PORT GPIOB
+#define KEY5_LED_PIN 12
+
 #define TEMP_PORT GPIOC
 #define TEMP_PIN 0
 #define TEMP_ADC_CHANNEL ADC_Channel_10
@@ -186,6 +195,11 @@ int main() {
     pinMode(KEY5_PORT, KEY5_PIN, INPUT_ANALOG);
     pinMode(KEY6_PORT, KEY6_PIN, INPUT_ANALOG);
 
+    pinMode(KEY2_LED_PORT, KEY2_LED_PIN, OUTPUT);
+    pinMode(KEY3_LED_PORT, KEY3_LED_PIN, OUTPUT);
+    pinMode(KEY4_LED_PORT, KEY4_LED_PIN, OUTPUT);
+    pinMode(KEY5_LED_PORT, KEY5_LED_PIN, OUTPUT);
+
     pinMode(TEMP_PORT, TEMP_PIN, INPUT_ANALOG);
     pinMode(VAD_PORT, VAD_PIN, INPUT_ANALOG);
     pinMode(NTC_PORT, NTC_PIN, INPUT_ANALOG);
@@ -199,6 +213,11 @@ int main() {
     digitalWrite(TRIAC_PORT, TRIAC_PIN, HIGH);
 
     display.setAll();
+
+    digitalWrite(KEY2_LED_PORT, KEY2_LED_PIN, HIGH);
+    digitalWrite(KEY3_LED_PORT, KEY3_LED_PIN, HIGH);
+    digitalWrite(KEY4_LED_PORT, KEY4_LED_PIN, HIGH);
+    digitalWrite(KEY5_LED_PORT, KEY5_LED_PIN, HIGH);
 
     tim2_init();
     tim3_init();
@@ -639,6 +658,10 @@ void change_power_state(power_states state) {
     switch (state) {
         case OFF:
             display.print("----");
+            digitalWrite(KEY2_LED_PORT, KEY2_LED_PIN, LOW);
+            digitalWrite(KEY3_LED_PORT, KEY3_LED_PIN, LOW);
+            digitalWrite(KEY4_LED_PORT, KEY4_LED_PIN, LOW);
+            digitalWrite(KEY5_LED_PORT, KEY5_LED_PIN, LOW);
             break;
         case ARMED:
             display.print("  ON");
@@ -648,9 +671,11 @@ void change_power_state(power_states state) {
             break;
         case TIMER_SET:
             display.printTime(timer_minutes, timer_seconds);
+            digitalWrite(KEY2_LED_PORT, KEY2_LED_PIN, LOW);
             break;
         case TIMER_ON:
             display.printTime(timer_minutes, timer_seconds);
+            digitalWrite(KEY2_LED_PORT, KEY2_LED_PIN, HIGH);
             break;
         case ERROR:
             display.print("ERR ");
