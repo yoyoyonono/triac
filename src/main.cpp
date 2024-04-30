@@ -274,8 +274,8 @@ int main() {
 #ifdef ENABLE_BUZZER
             TIM2->ATRLR = 2000;
             TIM2->CH3CVR = 1000;
-            buzzer_loop_count--;
 #endif
+            buzzer_loop_count--;
         }
 
         // read touchkey
