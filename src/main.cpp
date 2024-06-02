@@ -343,7 +343,7 @@ int main() {
 #ifdef LOG_BUZZER
         printf("Buzzer %d\r\n", get_tick());
 #endif
-        buzzer_loop_count = 50;
+        buzzer_loop_count = 30;
 
         if (switch_states[0]) {
             if (is_locked) {
