@@ -404,23 +404,37 @@ int main() {
                 break;
             case TIMER_SET:
                 if (switch_states[2]) {
-                    timer_minutes--;
-                    if (timer_minutes > 99) {
-                        timer_minutes = 0;
+                    if (timer_seconds != 0) {
+                        timer_seconds = 0;
+                    } else {
+                        timer_minutes--;
+                        if (timer_minutes > 99) {
+                            timer_minutes = 0;
+                        }
                     }
                 }
                 if (switch_states[3]) {
+                    if (timer_seconds != 0) {
+                        timer_seconds = 0;
+                    }
                     timer_minutes++;
                     if (timer_minutes > 99) {
                         timer_minutes = 99;
                     }
                 }
+                display.printTime(timer_minutes, timer_seconds);
+
                 if (switch_states[1]) {
                     change_power_state(TIMER_ON);
                 }
-                display.printTime(timer_minutes, timer_seconds);
+                if (switch_states[4]) {
+                    change_power_state(ON_WATTAGE);
+                }
                 break;
             case TIMER_ON:
+                if (switch_states[1]) {
+                    change_power_state(TIMER_SET);
+                }
                 if (switch_states[4]) {
                     change_power_state(ON_WATTAGE);
                 }
