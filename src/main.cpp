@@ -664,18 +664,24 @@ void change_power_state(power_states state) {
             digitalWrite(KEY5_LED_PORT, KEY5_LED_PIN, LOW);
             break;
         case ARMED:
-            display.print("  ON");
+            display.print("FUNC");
+            digitalWrite(KEY2_LED_PORT, KEY2_LED_PIN, LOW);
+            digitalWrite(KEY5_LED_PORT, KEY5_LED_PIN, LOW);
             break;
         case ON_WATTAGE:
             display.printNumber(current_wattage);
+            digitalWrite(KEY2_LED_PORT, KEY2_LED_PIN, LOW);
+            digitalWrite(KEY5_LED_PORT, KEY5_LED_PIN, HIGH);
             break;
         case TIMER_SET:
             display.printTime(timer_minutes, timer_seconds);
             digitalWrite(KEY2_LED_PORT, KEY2_LED_PIN, LOW);
+            digitalWrite(KEY5_LED_PORT, KEY5_LED_PIN, LOW);
             break;
         case TIMER_ON:
             display.printTime(timer_minutes, timer_seconds);
             digitalWrite(KEY2_LED_PORT, KEY2_LED_PIN, HIGH);
+            digitalWrite(KEY5_LED_PORT, KEY5_LED_PIN, HIGH);
             break;
         case ERROR:
             display.print("ERR ");
