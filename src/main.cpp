@@ -414,9 +414,7 @@ int main() {
                     }
                 }
                 if (switch_states[3]) {
-                    if (timer_seconds != 0) {
-                        timer_seconds = 0;
-                    }
+                    timer_seconds = 0;
                     timer_minutes++;
                     if (timer_minutes > 99) {
                         timer_minutes = 99;
