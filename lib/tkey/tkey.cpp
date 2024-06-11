@@ -1,6 +1,8 @@
+#include "tkey.hpp"
+
 #include <ch32v10x.h>
 #include <debug.h>
-#include "tkey.hpp"
+
 #include "stdlib.h"
 #include "util.hpp"
 
@@ -11,18 +13,16 @@ TouchButton::TouchButton(uint8_t channel) : channel(channel) {
 uint32_t TouchButton::read() {
     u32 val;
 
-    TKEY_CH = channel; // TouchKey Channel
+    TKEY_CH = channel;  // TouchKey Channel
 
-    while(!(TKEY_CR & 0x08000000))
-        ;
+    while (!(TKEY_CR & 0x08000000));
     val = (u32)TKEY_SR;
 
-    return val; 
+    return val;
 }
 
 bool TouchButton::is_pressed() {
     uint32_t new_value = read();
-
 
     // calculate average
     uint32_t average = 0;

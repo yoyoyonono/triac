@@ -224,7 +224,7 @@ int main() {
     tim4_init();
 
     printf("Timers init\r\n");
-    
+
     TIM2->CTLR1 |= 0;
 
     rtc_init();
@@ -246,13 +246,13 @@ int main() {
     printf("buzzer\r\n");
 
     printf("%d", get_tick());
-    
+
     adc_init();
 
     ADC_Cmd(ADC1, ENABLE);
 
     printf("ADC init\r\n");
-    
+
     TKEY_CR |= 0x51000000;
 
     for (TouchButton &button : touch) {
@@ -260,7 +260,6 @@ int main() {
     }
 
     printf("Keys init\r\n");
-
 
     change_power_state(OFF);
 
@@ -458,12 +457,13 @@ void adc_init() {
     ADC_InitStructure.ADC_NbrOfChannel = 1;
     ADC_Init(ADC1, &ADC_InitStructure);
     ADC_Cmd(ADC1, ENABLE);
+
     ADC_ResetCalibration(ADC1);
-    while (ADC_GetResetCalibrationStatus(ADC1))
-        ;
+
+    while (ADC_GetResetCalibrationStatus(ADC1));
     ADC_StartCalibration(ADC1);
-    while (ADC_GetCalibrationStatus(ADC1))
-        ;
+
+    while (ADC_GetCalibrationStatus(ADC1));
     adc_callibration_value = Get_CalibrationValue(ADC1);
 }
 
@@ -542,8 +542,9 @@ void rtc_init() {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
     PWR_BackupAccessCmd(ENABLE);
     RCC_LSICmd(ENABLE);
-    while (RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET)
-        ;
+
+    while (RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET);
+
     RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
     RCC_RTCCLKCmd(ENABLE);
     RTC_WaitForSynchro();

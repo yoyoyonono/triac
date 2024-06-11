@@ -1,17 +1,15 @@
-#include <ch32v10x.h>
 #include "util.hpp"
+
+#include <ch32v10x.h>
 
 void pinMode(GPIO_TypeDef *GPIOx, uint8_t PIN, GPIOMode_TypeDef MODE, GPIOSpeed_TypeDef SPEED) {
     if (GPIOx == GPIOA) {
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
-    }
-    else if (GPIOx == GPIOB) {
+    } else if (GPIOx == GPIOB) {
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
-    }
-    else if (GPIOx == GPIOC) {
+    } else if (GPIOx == GPIOC) {
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
-    }
-    else if (GPIOx == GPIOD) {
+    } else if (GPIOx == GPIOD) {
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
     }
 
@@ -19,13 +17,10 @@ void pinMode(GPIO_TypeDef *GPIOx, uint8_t PIN, GPIOMode_TypeDef MODE, GPIOSpeed_
     GPIO_InitStructure.GPIO_Pin = 1 << PIN;
     GPIO_InitStructure.GPIO_Mode = MODE;
     if (MODE == INPUT_ANALOG) {
-
-    }
-    else {
+    } else {
         GPIO_InitStructure.GPIO_Speed = SPEED;
     }
-    GPIO_Init(GPIOx, &GPIO_InitStructure);        
-    
+    GPIO_Init(GPIOx, &GPIO_InitStructure);
 }
 
 void pinMode(GPIO_TypeDef *GPIOx, uint8_t PIN, GPIOMode_TypeDef MODE) {
