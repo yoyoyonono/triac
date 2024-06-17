@@ -1,49 +1,24 @@
-#include "display.hpp"
+#include "twelvepindisplay.hpp"
 
 #include <cstddef>
 
 #include "asciimap.hpp"
 #include "util.hpp"
 
-Display::Display(GPIO_TypeDef *SEG_A_PORT, uint8_t SEG_A_PIN,
-                 GPIO_TypeDef *SEG_B_PORT, uint8_t SEG_B_PIN,
-                 GPIO_TypeDef *SEG_C_PORT, uint8_t SEG_C_PIN,
-                 GPIO_TypeDef *SEG_D_PORT, uint8_t SEG_D_PIN,
-                 GPIO_TypeDef *SEG_E_PORT, uint8_t SEG_E_PIN,
-                 GPIO_TypeDef *SEG_F_PORT, uint8_t SEG_F_PIN,
-                 GPIO_TypeDef *SEG_G_PORT, uint8_t SEG_G_PIN,
-                 GPIO_TypeDef *SEG_DP_PORT, uint8_t SEG_DP_PIN,
-                 GPIO_TypeDef *SEG_DIG1_PORT, uint8_t SEG_DIG1_PIN,
-                 GPIO_TypeDef *SEG_DIG2_PORT, uint8_t SEG_DIG2_PIN,
-                 GPIO_TypeDef *SEG_DIG3_PORT, uint8_t SEG_DIG3_PIN,
-                 GPIO_TypeDef *SEG_DIG4_PORT, uint8_t SEG_DIG4_PIN,
-                 display_mode mode) {
-    this->SEG_A_PORT = SEG_A_PORT;
-    this->SEG_A_PIN = SEG_A_PIN;
-    this->SEG_B_PORT = SEG_B_PORT;
-    this->SEG_B_PIN = SEG_B_PIN;
-    this->SEG_C_PORT = SEG_C_PORT;
-    this->SEG_C_PIN = SEG_C_PIN;
-    this->SEG_D_PORT = SEG_D_PORT;
-    this->SEG_D_PIN = SEG_D_PIN;
-    this->SEG_E_PORT = SEG_E_PORT;
-    this->SEG_E_PIN = SEG_E_PIN;
-    this->SEG_F_PORT = SEG_F_PORT;
-    this->SEG_F_PIN = SEG_F_PIN;
-    this->SEG_G_PORT = SEG_G_PORT;
-    this->SEG_G_PIN = SEG_G_PIN;
-    this->SEG_DP_PORT = SEG_DP_PORT;
-    this->SEG_DP_PIN = SEG_DP_PIN;
-    this->SEG_DIG1_PORT = SEG_DIG1_PORT;
-    this->SEG_DIG1_PIN = SEG_DIG1_PIN;
-    this->SEG_DIG2_PORT = SEG_DIG2_PORT;
-    this->SEG_DIG2_PIN = SEG_DIG2_PIN;
-    this->SEG_DIG3_PORT = SEG_DIG3_PORT;
-    this->SEG_DIG3_PIN = SEG_DIG3_PIN;
-    this->SEG_DIG4_PORT = SEG_DIG4_PORT;
-    this->SEG_DIG4_PIN = SEG_DIG4_PIN;
-    this->mode = mode;
-
+TwelvePinDisplay::TwelvePinDisplay(GPIO_TypeDef *SEG_A_PORT, uint8_t SEG_A_PIN,
+                                   GPIO_TypeDef *SEG_B_PORT, uint8_t SEG_B_PIN,
+                                   GPIO_TypeDef *SEG_C_PORT, uint8_t SEG_C_PIN,
+                                   GPIO_TypeDef *SEG_D_PORT, uint8_t SEG_D_PIN,
+                                   GPIO_TypeDef *SEG_E_PORT, uint8_t SEG_E_PIN,
+                                   GPIO_TypeDef *SEG_F_PORT, uint8_t SEG_F_PIN,
+                                   GPIO_TypeDef *SEG_G_PORT, uint8_t SEG_G_PIN,
+                                   GPIO_TypeDef *SEG_DP_PORT, uint8_t SEG_DP_PIN,
+                                   GPIO_TypeDef *SEG_DIG1_PORT, uint8_t SEG_DIG1_PIN,
+                                   GPIO_TypeDef *SEG_DIG2_PORT, uint8_t SEG_DIG2_PIN,
+                                   GPIO_TypeDef *SEG_DIG3_PORT, uint8_t SEG_DIG3_PIN,
+                                   GPIO_TypeDef *SEG_DIG4_PORT, uint8_t SEG_DIG4_PIN,
+                                   display_mode mode)
+    : SEG_A_PIN(SEG_A_PIN), SEG_A_PORT(SEG_A_PORT), SEG_B_PIN(SEG_B_PIN), SEG_B_PORT(SEG_B_PORT), SEG_C_PIN(SEG_C_PIN), SEG_C_PORT(SEG_C_PORT), SEG_D_PIN(SEG_D_PIN), SEG_D_PORT(SEG_D_PORT), SEG_E_PIN(SEG_E_PIN), SEG_E_PORT(SEG_E_PORT), SEG_F_PIN(SEG_F_PIN), SEG_F_PORT(SEG_F_PORT), SEG_G_PIN(SEG_G_PIN), SEG_G_PORT(SEG_G_PORT), SEG_DP_PIN(SEG_DP_PIN), SEG_DP_PORT(SEG_DP_PORT), SEG_DIG1_PIN(SEG_DIG1_PIN), SEG_DIG1_PORT(SEG_DIG1_PORT), SEG_DIG2_PIN(SEG_DIG2_PIN), SEG_DIG2_PORT(SEG_DIG2_PORT), SEG_DIG3_PIN(SEG_DIG3_PIN), SEG_DIG3_PORT(SEG_DIG3_PORT), SEG_DIG4_PIN(SEG_DIG4_PIN), SEG_DIG4_PORT(SEG_DIG4_PORT), mode(mode) {
     // Set up GPIOs
     pinMode(SEG_A_PORT, SEG_A_PIN, OUTPUT);
     pinMode(SEG_B_PORT, SEG_B_PIN, OUTPUT);
@@ -68,7 +43,7 @@ Display::Display(GPIO_TypeDef *SEG_A_PORT, uint8_t SEG_A_PIN,
     asciiMap = AsciiMap();
 }
 
-void Display::refresh() {
+void TwelvePinDisplay::refresh() {
     if (mode == COMMON_CATHODE) {
         // clear anodes
 
@@ -172,7 +147,7 @@ void Display::refresh() {
     }
 }
 
-void Display::clear() {
+void TwelvePinDisplay::clear() {
     digits[0] = std::byte(0);
     digits[1] = std::byte(0);
     digits[2] = std::byte(0);
@@ -182,14 +157,14 @@ void Display::clear() {
     }
 }
 
-void Display::print(char *str) {
+void TwelvePinDisplay::print(char *str) {
     // set byte values based on ascii lookup
     for (int i = 0; i < 4; i++) {
         digits[i] = std::byte(asciiMap.map[str[i] - 32]);
     }
 }
 
-void Display::printNumber(int16_t number, bool zeroPadding) {
+void TwelvePinDisplay::printNumber(int16_t number, bool zeroPadding) {
     char str[4];
     if (number < 0) {
         number = -number;
@@ -215,30 +190,30 @@ void Display::printNumber(int16_t number, bool zeroPadding) {
     print(str);
 }
 
-void Display::printTemperature(int16_t temperature) {
+void TwelvePinDisplay::printTemperature(int16_t temperature) {
     printNumber(temperature * 10);
     digits[3] = std::byte(0b01100011);  // degree symbol
 }
 
-void Display::printTime(uint8_t hour, uint8_t min) {
+void TwelvePinDisplay::printTime(uint8_t hour, uint8_t min) {
     printNumber(hour * 100 + min, true);
     digits[1] |= std::byte(0b10000000);  // colon
 }
 
-void Display::printRaw(std::byte *raw) {
+void TwelvePinDisplay::printRaw(std::byte *raw) {
     for (int i = 0; i < 4; i++) {
         digits[i] = raw[i];
     }
 }
 
-void Display::setAll() {
+void TwelvePinDisplay::setAll() {
     digits[0] = std::byte(0b11111111);
     digits[1] = std::byte(0b11111111);
     digits[2] = std::byte(0b11111111);
     digits[3] = std::byte(0b11111111);
 }
 
-void Display::allOff() {
+void TwelvePinDisplay::allOff() {
     if (mode == COMMON_CATHODE) {
         digitalWrite(SEG_DIG1_PORT, SEG_DIG1_PIN, HIGH);
         digitalWrite(SEG_DIG2_PORT, SEG_DIG2_PIN, HIGH);

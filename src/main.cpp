@@ -2,8 +2,9 @@
 #include <debug.h>
 #include <string.h>
 
-#include "display.hpp"
+#include "eightpindisplay.hpp"
 #include "tkey.hpp"
+#include "twelvepindisplay.hpp"
 #include "util.hpp"
 
 // #define LOG_INTERRUPT
@@ -12,6 +13,8 @@
 // #define LOG_ALPHA
 // #define LOG_BUZZER
 #define ENABLE_BUZZER
+// #define TWELVE_PIN_DISPLAY
+#define EIGHT_PIN_DISPLAY
 
 #define KEY1_PORT GPIOA
 #define KEY1_PIN 0
@@ -45,6 +48,7 @@
 #define NTC_PIN 2
 #define NTC_ADC_CHANNEL ADC_Channel_12
 
+#ifdef TWELVE_PIN_DISPLAY
 #define SEG_A_PORT GPIOC
 #define SEG_A_PIN 8
 #define SEG_B_PORT GPIOB
@@ -61,6 +65,24 @@
 #define SEG_G_PIN 7
 #define SEG_DP_PORT GPIOC
 #define SEG_DP_PIN 5
+#elif defined(EIGHT_PIN_DISPLAY)
+#define PIN_0_PORT GPIOC
+#define PIN_0_PIN 8
+#define PIN_1_PORT GPIOC
+#define PIN_1_PIN 7
+#define PIN_2_PORT GPIOC
+#define PIN_2_PIN 6
+#define PIN_3_PORT GPIOB
+#define PIN_3_PIN 15
+#define PIN_4_PORT GPIOB
+#define PIN_4_PIN 0
+#define PIN_5_PORT GPIOC
+#define PIN_5_PIN 5
+#define PIN_6_PORT GPIOC
+#define PIN_6_PIN 4
+#define PIN_7_PORT GPIOA
+#define PIN_7_PIN 7
+#endif
 
 #define SEG_DIG1_PORT GPIOC
 #define SEG_DIG1_PIN 9
@@ -156,19 +178,30 @@ TouchButton touch[] = {
     TouchButton(ADC_Channel_3),
 };
 
-Display display = Display(SEG_A_PORT, SEG_A_PIN,
-                          SEG_B_PORT, SEG_B_PIN,
-                          SEG_C_PORT, SEG_C_PIN,
-                          SEG_D_PORT, SEG_D_PIN,
-                          SEG_E_PORT, SEG_E_PIN,
-                          SEG_F_PORT, SEG_F_PIN,
-                          SEG_G_PORT, SEG_G_PIN,
-                          SEG_DP_PORT, SEG_DP_PIN,
-                          SEG_DIG1_PORT, SEG_DIG1_PIN,
-                          SEG_DIG2_PORT, SEG_DIG2_PIN,
-                          SEG_DIG3_PORT, SEG_DIG3_PIN,
-                          SEG_DIG4_PORT, SEG_DIG4_PIN,
-                          COMMON_CATHODE);
+#ifdef TWELVE_PIN_DISPLAY
+TwelvePinDisplay display = TwelvePinDisplay(SEG_A_PORT, SEG_A_PIN,
+                                            SEG_B_PORT, SEG_B_PIN,
+                                            SEG_C_PORT, SEG_C_PIN,
+                                            SEG_D_PORT, SEG_D_PIN,
+                                            SEG_E_PORT, SEG_E_PIN,
+                                            SEG_F_PORT, SEG_F_PIN,
+                                            SEG_G_PORT, SEG_G_PIN,
+                                            SEG_DP_PORT, SEG_DP_PIN,
+                                            SEG_DIG1_PORT, SEG_DIG1_PIN,
+                                            SEG_DIG2_PORT, SEG_DIG2_PIN,
+                                            SEG_DIG3_PORT, SEG_DIG3_PIN,
+                                            SEG_DIG4_PORT, SEG_DIG4_PIN,
+                                            COMMON_CATHODE);
+#elif defined(EIGHT_PIN_DISPLAY)
+EightPinDisplay display = EightPinDisplay(PIN_0_PORT, PIN_0_PIN,
+                                          PIN_1_PORT, PIN_1_PIN,
+                                          PIN_2_PORT, PIN_2_PIN,
+                                          PIN_3_PORT, PIN_3_PIN,
+                                          PIN_4_PORT, PIN_4_PIN,
+                                          PIN_5_PORT, PIN_5_PIN,
+                                          PIN_6_PORT, PIN_6_PIN,
+                                          PIN_7_PORT, PIN_7_PIN);
+#endif
 
 int main() {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -177,6 +210,8 @@ int main() {
     USART_Printf_Init(115200);
     printf(__TIMESTAMP__);
     printf("\r\n");
+    const volatile uint32_t* pulUID = static_cast<const volatile uint32_t*>((const void*)0x1FFFF7E8UL);
+    printf("Unique ID: %08lX %08lX %08lX\r\n", pulUID[2], pulUID[1], pulUID[0]);
     printf("SystemCoreClock: %d\r\n", (int)SystemCoreClock);
 
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
@@ -255,7 +290,7 @@ int main() {
 
     TKEY_CR |= 0x51000000;
 
-    for (TouchButton &button : touch) {
+    for (TouchButton& button : touch) {
         printf("%d\r\n", button.callibrate());
     }
 
@@ -350,7 +385,7 @@ int main() {
                 change_power_state(current_power_state);
             } else {
                 is_locked = true;
-                display.print("LOCK");
+                display.print("LOC ");
             }
         }
 
@@ -506,7 +541,7 @@ void tim4_init() {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
 
     TIM4->PSC = (SystemCoreClock / 1000000) - 1;
-    TIM4->ATRLR = 2000;
+    TIM4->ATRLR = 500;
     TIM4->CNT = 0;
     TIM4->CHCTLR2 = 0b0000000001100000;
     TIM4->CCER = 0b0000000100000000;
