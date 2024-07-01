@@ -8,6 +8,7 @@
 
 TouchButton::TouchButton(uint8_t channel) : channel(channel) {
     last_read = false;
+    last_read_value = 0;
 }
 
 uint32_t TouchButton::read() {
@@ -17,6 +18,8 @@ uint32_t TouchButton::read() {
 
     while (!(TKEY_CR & 0x08000000));
     val = (u32)TKEY_SR;
+
+    last_read_value = val;
 
     return val;
 }
@@ -31,7 +34,7 @@ bool TouchButton::is_pressed() {
     }
     average /= 100;
 
-    if (abs((int16_t)average - (int16_t)new_value) > 50) {
+    if (abs((int16_t)average - (int16_t)new_value) > 100) {
         delay(20);
         return true;
     } else {

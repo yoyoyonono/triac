@@ -9,7 +9,7 @@
 
 // #define LOG_INTERRUPT
 // #define LOG_BUTTONVALS
-// #define LOG_SWITCHES
+#define LOG_SWITCHES
 // #define LOG_ALPHA
 // #define LOG_BUZZER
 #define ENABLE_BUZZER
@@ -290,6 +290,8 @@ int main() {
 
     TKEY_CR |= 0x51000000;
 
+    delay(1000);
+
     for (TouchButton& button : touch) {
         printf("%d\r\n", button.callibrate());
     }
@@ -372,12 +374,45 @@ int main() {
             continue;
         }
 
+        uint8_t lowest_index = 0;
+        uint32_t largest_difference = 0;
+        for (uint8_t i = 0; i < 6; i++) {
+            if (switch_states[i]) {
+                uint32_t difference = touch[i].normal_value_average - touch[i].last_read_value;
+                if (difference > largest_difference) {
+                    largest_difference = difference;
+                    lowest_index = i;
+                }
+            }
+        }
+
+        for (uint8_t i = 0; i < 6; i++) {
+            if (i != lowest_index) {
+                switch_states[i] = false;
+            }
+        }
+
+        if (touch[lowest_index].last_read_value > touch[lowest_index].normal_value_average) {
+            continue;
+        }
+
+
+#ifdef LOG_SWITCHES
+        printf("filter\t");
+        for (bool i : switch_states) {
+            printf("%d", i);
+        }
+        printf(" %d", touch[lowest_index].last_read_value);
+        printf("\r\n");
+#endif
+
         pinMode(BUZZER_PORT, BUZZER_PIN, GPIO_Mode_AF_PP);
 
 #ifdef LOG_BUZZER
         printf("Buzzer %d\r\n", get_tick());
 #endif
         buzzer_loop_count = 30;
+
 
         if (switch_states[0]) {
             if (is_locked) {
@@ -541,7 +576,7 @@ void tim4_init() {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
 
     TIM4->PSC = (SystemCoreClock / 1000000) - 1;
-    TIM4->ATRLR = 500;
+    TIM4->ATRLR = 1000;
     TIM4->CNT = 0;
     TIM4->CHCTLR2 = 0b0000000001100000;
     TIM4->CCER = 0b0000000100000000;

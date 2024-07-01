@@ -14,6 +14,7 @@ class TouchButton {
     bool is_pressed();
     uint32_t callibrate();
     uint32_t normal_value_average;
+    uint32_t last_read_value;
 
    private:
     bool last_read;
