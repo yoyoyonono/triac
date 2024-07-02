@@ -34,7 +34,7 @@ bool TouchButton::is_pressed() {
     }
     average /= 100;
 
-    if (abs((int16_t)average - (int16_t)new_value) > 100) {
+    if ((int16_t)average - (int16_t)new_value > 100) {
         delay(20);
         return true;
     } else {
